@@ -79,7 +79,7 @@ export function themeTokens(theme: ThemeSeed, mode: Mode): Record<string, Oklch>
   const quiet = dark ? g(0.25) : g(0.965);
   const muted = dark ? g(0.72) : g(0.48);
   const line = dark ? g(0.29) : g(0.91);
-  const control = dark ? g(0.56) : g(0.62);
+  const control = dark ? g(0.44) : g(0.62);
   // Pale primaries like yellow can't mark focus on a white page, so the ring falls back to text color.
   const ring = contrast(primary, surface) >= 3 ? primary : text;
 

@@ -16,11 +16,12 @@ const shade = (index: number) => `color-mix(in oklch, var(--primary) ${SHADES[in
 
 /** Keeps the largest slices and folds the rest into "Other", so shades stay easy to tell apart. */
 export function foldSlices(slices: readonly DonutSlice[]): DonutSlice[] {
-  const sorted = slices.filter((slice) => slice.value > 0).sort((a, b) => b.value - a.value);
+  const sorted = [...slices].sort((a, b) => b.value - a.value);
   if (sorted.length <= MAX_SLICES) return sorted;
   const kept = sorted.slice(0, MAX_SLICES - 1);
   const other = sorted.slice(MAX_SLICES - 1).reduce((sum, slice) => sum + slice.value, 0);
-  return [...kept, { label: "Other", value: other }];
+  // Empty rows only pad the legend, so they don't earn an "Other".
+  return other > 0 ? [...kept, { label: "Other", value: other }] : sorted.slice(0, MAX_SLICES);
 }
 
 export function DonutChart({ slices, totalLabel, empty }: { slices: readonly DonutSlice[]; totalLabel: string; empty: string }) {
@@ -28,20 +29,21 @@ export function DonutChart({ slices, totalLabel, empty }: { slices: readonly Don
   const data = foldSlices(slices);
   const total = data.reduce((sum, slice) => sum + slice.value, 0);
 
-  if (total === 0) return <p className="text-muted-foreground py-8 text-center text-sm">{empty}</p>;
-
-  const single = data.length === 1;
-  const segments = data.map((slice, index) => {
+  const single = data.filter((slice) => slice.value > 0).length === 1;
+  const segments = data.flatMap((slice, index) => {
+    if (slice.value === 0) return [];
     const length = (slice.value / total) * CIRCUMFERENCE;
     const before = data.slice(0, index).reduce((sum, earlier) => sum + earlier.value, 0);
-    return {
-      index,
-      length: single ? length : Math.max(length - GAP, 0.5),
-      offset: (before / total) * CIRCUMFERENCE,
-    };
+    return [
+      {
+        index,
+        length: single ? length : Math.max(length - GAP, 0.5),
+        offset: (before / total) * CIRCUMFERENCE,
+      },
+    ];
   });
   const shown = active === null ? null : data[active];
-  const percent = (value: number) => `${Math.round((value / total) * 100)}%`;
+  const percent = (value: number) => `${total === 0 ? 0 : Math.round((value / total) * 100)}%`;
 
   return (
     <div className="flex flex-wrap items-center gap-5">
@@ -52,6 +54,7 @@ export function DonutChart({ slices, totalLabel, empty }: { slices: readonly Don
           role="img"
           aria-label={`${totalLabel}: ${total}. ${data.map((slice) => `${slice.label} ${slice.value}`).join(", ")}.`}
         >
+          <circle cx="50" cy="50" r={RADIUS} fill="none" strokeWidth={13} className="stroke-muted" />
           {segments.map((segment) => (
             <circle
               key={segment.index}
@@ -75,6 +78,12 @@ export function DonutChart({ slices, totalLabel, empty }: { slices: readonly Don
         </div>
       </div>
       <ul className="min-w-36 flex-1 space-y-1.5 text-sm">
+        {data.length === 0 && (
+          <li className="text-muted-foreground flex items-center gap-2">
+            <span className="bg-muted size-2.5 shrink-0 rounded-sm" aria-hidden />
+            {empty}
+          </li>
+        )}
         {data.map((slice, index) => (
           <li
             key={slice.label}

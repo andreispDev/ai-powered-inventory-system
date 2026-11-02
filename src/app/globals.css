@@ -112,6 +112,17 @@
   background-image: linear-gradient(120deg, var(--primary), color-mix(in oklch, var(--primary) 72%, black));
 }
 
+/* The greeting stays white on a deep color in every theme and mode, because light primaries can't carry it. */
+.welcome-hero {
+  --primary-foreground: oklch(1 0 0);
+  background-image: linear-gradient(120deg, color-mix(in oklch, var(--primary) 78%, black), color-mix(in oklch, var(--primary) 55%, black));
+}
+
+/* Darkens the side the text sits on. */
+.welcome-scrim {
+  background-image: linear-gradient(90deg, oklch(0 0 0 / 50%), oklch(0 0 0 / 25%) 45%, transparent 80%);
+}
+
 /* Decorative circles in the banner corner, drawn in the banner's own text color. */
 .welcome-rings {
   background-image:
@@ -119,6 +130,32 @@
     radial-gradient(circle at 92% 10%, transparent 0 7rem, color-mix(in oklch, var(--primary-foreground) 9%, transparent) 7rem 7.1rem, transparent 7.1rem),
     radial-gradient(circle at 92% 10%, transparent 0 11rem, color-mix(in oklch, var(--primary-foreground) 6%, transparent) 11rem 11.1rem, transparent 11.1rem),
     radial-gradient(24rem 14rem at 100% 0%, color-mix(in oklch, var(--primary-foreground) 14%, transparent), transparent);
+}
+
+/* Sidebar links: quiet until hovered, and the current page is unmistakable. */
+[data-sidebar="menu-button"]:not([data-size="lg"]):not(:disabled):not([data-active="true"]) {
+  color: color-mix(in oklch, var(--sidebar-foreground) 74%, transparent);
+}
+
+[data-sidebar="menu-button"]:not([data-size="lg"]):not(:disabled):not([data-active="true"]):hover {
+  color: var(--sidebar-foreground);
+  background-color: color-mix(in oklch, var(--primary) 10%, transparent);
+}
+
+[data-sidebar="menu-button"] > svg {
+  transition: transform var(--motion-base) ease;
+}
+
+[data-sidebar="menu-button"]:not([data-size="lg"]):not(:disabled):not([data-active="true"]):hover > svg {
+  transform: translateX(2px);
+}
+
+[data-sidebar="menu-button"][data-active="true"],
+[data-sidebar="menu-button"][data-active="true"]:hover {
+  color: var(--primary-foreground);
+  font-weight: 600;
+  background-image: linear-gradient(100deg, var(--primary), color-mix(in oklch, var(--primary) 72%, var(--sidebar)));
+  box-shadow: var(--elevation-card);
 }
 
 .brand-mark {

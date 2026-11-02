@@ -118,6 +118,8 @@ async function Content({ searchParams }: Props) {
             showOffice={!actor.officeId}
             storageKey={categoryId ?? "all"}
             hideLocation={data.hideLocation}
+            canEdit={actor.permissions.includes("item.update")}
+            canDelete={actor.permissions.includes("item.delete")}
           />
           <TablePagination total={data.total} page={page} pageSize={pageSize} />
         </Card>

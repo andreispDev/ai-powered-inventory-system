@@ -1,9 +1,10 @@
 "use client";
 
-import { ArrowDown, ArrowUp, Columns3 } from "lucide-react";
+import { ArrowDown, ArrowUp, Columns3, Eye, Pencil } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useUrlState } from "@/components/data-table/pagination";
+import { RowActions, RowLink } from "@/components/data-table/row-actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -11,6 +12,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { FieldDef } from "@/modules/categories/field-schema";
 import { formatAttribute, statusLabel } from "./format";
+import { DeleteItemButton } from "./item-actions";
 
 export type ItemRow = {
   id: string;
@@ -42,6 +44,8 @@ export function ItemsTable({
   showOffice,
   storageKey,
   hideLocation = false,
+  canEdit = false,
+  canDelete = false,
 }: {
   rows: ItemRow[];
   fields: readonly FieldDef[];
@@ -49,6 +53,8 @@ export function ItemsTable({
   showOffice: boolean;
   storageKey: string;
   hideLocation?: boolean;
+  canEdit?: boolean;
+  canDelete?: boolean;
 }) {
   const { params, set, pending } = useUrlState();
   const [hidden, setHidden] = useState<string[]>([]);
@@ -174,6 +180,7 @@ export function ItemsTable({
                   </TableHead>
                 );
               })}
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -184,6 +191,13 @@ export function ItemsTable({
                     {column.render(row)}
                   </TableCell>
                 ))}
+                <TableCell>
+                  <RowActions>
+                    <RowLink href={`/inventory/${row.id}`} icon={Eye} label="View" />
+                    {canEdit && <RowLink href={`/inventory/${row.id}/edit`} icon={Pencil} label="Edit" />}
+                    {canDelete && <DeleteItemButton id={row.id} name={row.name} size="sm" />}
+                  </RowActions>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>

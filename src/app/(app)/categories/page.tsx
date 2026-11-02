@@ -1,7 +1,8 @@
-import { FolderTree, Plus } from "lucide-react";
+import { Boxes, Eye, FolderTree, Plus } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
+import { RowActions, RowLink } from "@/components/data-table/row-actions";
 import { AccessDenied } from "@/components/feedback/access-denied";
 import { EmptyState, PageContainer, PageHeader, TableSkeleton } from "@/components/shell/page";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { listCategories } from "@/modules/categories/queries";
+import { CategoryArchiveButton } from "@/modules/categories/archive-button";
 import { requireActor } from "@/server/auth/session";
 import { readScoped } from "@/server/guard/read";
 
@@ -55,6 +57,7 @@ async function Content() {
                 <TableHead className="text-right">Columns</TableHead>
                 <TableHead className="text-right">Items</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -71,6 +74,13 @@ async function Content() {
                   <TableCell className="text-right tabular-nums">{row.items}</TableCell>
                   <TableCell>
                     <Badge variant={row.archivedAt ? "outline" : "secondary"}>{row.archivedAt ? "Archived" : "Active"}</Badge>
+                  </TableCell>
+                  <TableCell>
+                    <RowActions>
+                      <RowLink href={`/categories/${row.id}`} icon={Eye} label="View" />
+                      <RowLink href={`/inventory?category=${row.id}`} icon={Boxes} label="Items" />
+                      {actor.permissions.includes("category.archive") && <CategoryArchiveButton id={row.id} archived={!!row.archivedAt} size="sm" />}
+                    </RowActions>
                   </TableCell>
                 </TableRow>
               ))}

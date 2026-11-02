@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useSubmit } from "@/hooks/use-submit";
 import { setCategoryArchived } from "./actions";
 
-export function CategoryArchiveButton({ id, archived }: { id: string; archived: boolean }) {
+export function CategoryArchiveButton({ id, archived, size }: { id: string; archived: boolean; size?: "sm" }) {
   const router = useRouter();
   const { submit, state } = useSubmit(setCategoryArchived);
   return (
@@ -28,7 +28,7 @@ export function CategoryArchiveButton({ id, archived }: { id: string; archived: 
         } else if (result) toast.error(result.message);
       }}
     >
-      <Button variant="outline" disabled={state.pending || state.offline}>
+      <Button variant="outline" size={size} disabled={state.pending || state.offline}>
         {archived ? "Restore" : "Archive"}
       </Button>
     </Confirm>

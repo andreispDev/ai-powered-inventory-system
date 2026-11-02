@@ -1,8 +1,9 @@
-import { UserCheck } from "lucide-react";
+import { Eye, UserCheck } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { TablePagination } from "@/components/data-table/pagination";
+import { RowActions, RowLink } from "@/components/data-table/row-actions";
 import { AccessDenied } from "@/components/feedback/access-denied";
 import { EmptyState, PageContainer, PageHeader, TableSkeleton } from "@/components/shell/page";
 import { Card } from "@/components/ui/card";
@@ -39,7 +40,7 @@ async function Content({ searchParams }: Props) {
                 <TableHead>Since</TableHead>
                 <TableHead>By</TableHead>
                 <TableHead>Return by</TableHead>
-                <TableHead />
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -57,8 +58,11 @@ async function Content({ searchParams }: Props) {
                     {row.dueAt ?? "—"}
                     {row.dueAt && row.dueAt < today ? " (overdue)" : ""}
                   </TableCell>
-                  <TableCell className="text-right">
-                    <ReturnButton id={row.id} name={row.assigneeName} />
+                  <TableCell>
+                    <RowActions>
+                      <RowLink href={`/inventory/${row.itemId}`} icon={Eye} label="View item" />
+                      <ReturnButton id={row.id} name={row.assigneeName} />
+                    </RowActions>
                   </TableCell>
                 </TableRow>
               ))}

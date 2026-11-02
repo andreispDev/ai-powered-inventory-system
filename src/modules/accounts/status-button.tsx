@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useSubmit } from "@/hooks/use-submit";
 import { setAccountActive } from "./actions";
 
-export function AccountStatusButton({ id, name, active }: { id: string; name: string; active: boolean }) {
+export function AccountStatusButton({ id, name, active, size }: { id: string; name: string; active: boolean; size?: "sm" }) {
   const router = useRouter();
   const { submit, state } = useSubmit(setAccountActive);
 
@@ -31,7 +31,7 @@ export function AccountStatusButton({ id, name, active }: { id: string; name: st
       destructive={active}
       onConfirm={run}
     >
-      <Button variant="outline" disabled={state.pending || state.offline}>
+      <Button variant="outline" size={size} disabled={state.pending || state.offline}>
         {active ? "Deactivate" : "Reactivate"}
       </Button>
     </Confirm>

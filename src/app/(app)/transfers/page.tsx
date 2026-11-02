@@ -1,7 +1,8 @@
-import { ArrowLeftRight } from "lucide-react";
+import { Eye, ArrowLeftRight } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
+import { RowActions, RowLink } from "@/components/data-table/row-actions";
 import { TableFilter, TablePagination } from "@/components/data-table/pagination";
 import { AccessDenied } from "@/components/feedback/access-denied";
 import { LocalTime } from "@/components/shell/local-time";
@@ -67,6 +68,7 @@ async function Content({ searchParams }: Props) {
                 <TableHead>To</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Requested</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -89,6 +91,11 @@ async function Content({ searchParams }: Props) {
                   </TableCell>
                   <TableCell className="text-muted-foreground text-xs">
                     <LocalTime date={row.createdAt} />
+                  </TableCell>
+                  <TableCell>
+                    <RowActions>
+                      <RowLink href={`/transfers/${row.id}`} icon={Eye} label="View" />
+                    </RowActions>
                   </TableCell>
                 </TableRow>
               ))}

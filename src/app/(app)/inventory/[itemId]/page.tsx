@@ -1,9 +1,11 @@
 import { and, desc, eq, sql } from "drizzle-orm";
+import { UserRound } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { z } from "zod";
+import { RowActions, RowLink } from "@/components/data-table/row-actions";
 import { AccessDenied } from "@/components/feedback/access-denied";
 import { LocalTime } from "@/components/shell/local-time";
 import { PageContainer, PageHeader, PageSkeleton } from "@/components/shell/page";
@@ -243,6 +245,7 @@ async function Content({ params }: Props) {
                   <TableHead className="text-right">Balance</TableHead>
                   <TableHead>Reason</TableHead>
                   <TableHead>By</TableHead>
+                  {can("user.read") && <TableHead className="text-right">Actions</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -259,6 +262,13 @@ async function Content({ params }: Props) {
                     <TableCell className="text-right tabular-nums">{movement.balanceAfter}</TableCell>
                     <TableCell className="max-w-64 truncate">{movement.reason}</TableCell>
                     <TableCell>{movement.actorName ?? "—"}</TableCell>
+                    {can("user.read") && (
+                      <TableCell>
+                        <RowActions>
+                          <RowLink href={`/accounts/${movement.actorId}`} icon={UserRound} label="View person" />
+                        </RowActions>
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))}
               </TableBody>

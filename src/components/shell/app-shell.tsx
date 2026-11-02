@@ -217,14 +217,7 @@ function UserMenu({ user }: { user: ShellUser }) {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-60">
-        <DropdownMenuLabel className="font-normal">
-          <p className="truncate text-sm font-medium">{user.name}</p>
-          <p className="text-muted-foreground truncate text-xs">{user.email}</p>
-          <p className="text-muted-foreground mt-1 text-xs">
-            {ROLE_LABEL[user.role]}
-            {user.officeName ? ` · ${user.officeName}` : ""}
-          </p>
-        </DropdownMenuLabel>
+        <DropdownMenuLabel className="text-sm font-medium">{ROLE_LABEL[user.role]}</DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
           <Link href="/profile">

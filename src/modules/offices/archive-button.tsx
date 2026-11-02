@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useSubmit } from "@/hooks/use-submit";
 import { setOfficeArchived } from "./actions";
 
-export function ArchiveOfficeButton({ id, archived }: { id: string; archived: boolean }) {
+export function ArchiveOfficeButton({ id, archived, size }: { id: string; archived: boolean; size?: "sm" }) {
   const router = useRouter();
   const { submit, state } = useSubmit(setOfficeArchived);
   return (
@@ -28,7 +28,7 @@ export function ArchiveOfficeButton({ id, archived }: { id: string; archived: bo
         } else if (result) toast.error(result.message);
       }}
     >
-      <Button variant="outline" disabled={state.pending || state.offline}>
+      <Button variant="outline" size={size} disabled={state.pending || state.offline}>
         {archived ? "Restore office" : "Archive office"}
       </Button>
     </Confirm>

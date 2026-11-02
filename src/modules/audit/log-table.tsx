@@ -49,6 +49,7 @@ export function LogTable({ rows, showOffice, nextBefore }: { rows: Row[]; showOf
             {showOffice && <TableHead>Office</TableHead>}
             <TableHead>Action</TableHead>
             <TableHead>Record</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -63,6 +64,11 @@ export function LogTable({ rows, showOffice, nextBefore }: { rows: Row[]; showOf
               {showOffice && <TableCell>{row.officeName ?? "—"}</TableCell>}
               <TableCell className="font-mono text-xs">{row.action}</TableCell>
               <TableCell className="max-w-48 truncate text-xs">{row.entityType ? `${row.entityType} ${row.entityId?.slice(0, 8) ?? ""}` : "—"}</TableCell>
+              <TableCell className="text-right">
+                <Button variant="ghost" size="sm" onClick={() => setOpen(row)}>
+                  Details
+                </Button>
+              </TableCell>
             </TableRow>
           ))}
         </TableBody>

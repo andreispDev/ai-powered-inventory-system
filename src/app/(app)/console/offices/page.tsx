@@ -1,8 +1,9 @@
 import { asc, count, ilike, or, sql } from "drizzle-orm";
-import { Building2, Plus } from "lucide-react";
+import { Eye, Building2, Plus } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
+import { RowActions, RowLink } from "@/components/data-table/row-actions";
 import { TablePagination, TableSearch } from "@/components/data-table/pagination";
 import { AccessDenied } from "@/components/feedback/access-denied";
 import { EmptyState, PageContainer, PageHeader, TableSkeleton } from "@/components/shell/page";
@@ -11,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { param, parsePage, type SearchParams } from "@/lib/pagination";
+import { ArchiveOfficeButton } from "@/modules/offices/archive-button";
 import { requireActor } from "@/server/auth/session";
 import { appUser, office } from "@/server/db/schema";
 import { readScoped } from "@/server/guard/read";
@@ -78,6 +80,7 @@ async function Content({ searchParams }: Props) {
                 <TableHead>Code</TableHead>
                 <TableHead className="text-right">People</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -94,6 +97,12 @@ async function Content({ searchParams }: Props) {
                     <Badge variant={row.status === "active" ? "secondary" : "outline"}>
                       {row.status === "active" ? "Active" : "Archived"}
                     </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <RowActions>
+                      <RowLink href={`/console/offices/${row.id}`} icon={Eye} label="View" />
+                      <ArchiveOfficeButton id={row.id} archived={row.status !== "active"} size="sm" />
+                    </RowActions>
                   </TableCell>
                 </TableRow>
               ))}

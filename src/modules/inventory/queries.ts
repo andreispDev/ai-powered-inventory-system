@@ -113,6 +113,7 @@ export const listMovements = (tx: ScopedTx, itemId: string) =>
       balanceAfter: stockMovement.balanceAfter,
       reason: stockMovement.reason,
       occurredAt: stockMovement.occurredAt,
+      actorId: stockMovement.actorId,
       actorName: appUser.name,
     })
     .from(stockMovement)

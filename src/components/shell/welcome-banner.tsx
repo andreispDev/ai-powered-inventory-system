@@ -32,7 +32,8 @@ export function WelcomeBanner({
   const today = useSyncExternalStore(noSubscribe, dateNow, () => "");
 
   return (
-    <section className="welcome-banner text-primary-foreground shadow-raised relative isolate overflow-hidden rounded-2xl px-6 py-6 sm:px-8 sm:py-7">
+    <section className="welcome-banner welcome-hero text-primary-foreground shadow-raised relative isolate overflow-hidden rounded-2xl px-6 py-6 sm:px-8 sm:py-7">
+      <div aria-hidden className="welcome-scrim absolute inset-0 -z-10" />
       <div aria-hidden className="welcome-rings absolute inset-0 -z-10" />
       <div className="flex flex-wrap items-center justify-between gap-5">
         <div className="flex min-w-0 items-center gap-4">

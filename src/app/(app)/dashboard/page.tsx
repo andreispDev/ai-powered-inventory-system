@@ -130,9 +130,9 @@ async function Content() {
             <DonutChart
               totalLabel="Items"
               empty="No items yet."
-              slices={data.breakdown.byStatus.map((row) => ({
-                label: ITEM_STATUSES.find((status) => status.value === row.label)?.label ?? row.label,
-                value: row.value,
+              slices={ITEM_STATUSES.map((status) => ({
+                label: status.label,
+                value: data.breakdown.byStatus.find((row) => row.label === status.value)?.value ?? 0,
               }))}
             />
           </CardContent>

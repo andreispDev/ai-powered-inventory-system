@@ -1,8 +1,9 @@
 import { and, asc, count, eq, ilike, or, sql } from "drizzle-orm";
-import { Plus, Users } from "lucide-react";
+import { Eye, Plus, Users } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
+import { RowActions, RowLink } from "@/components/data-table/row-actions";
 import { TableFilter, TablePagination, TableSearch } from "@/components/data-table/pagination";
 import { AccessDenied } from "@/components/feedback/access-denied";
 import { EmptyState, PageContainer, PageHeader, TableSkeleton } from "@/components/shell/page";
@@ -11,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { param, parsePage, type SearchParams } from "@/lib/pagination";
+import { AccountStatusButton } from "@/modules/accounts/status-button";
 import { requireActor } from "@/server/auth/session";
 import { appUser, office } from "@/server/db/schema";
 import { readScoped } from "@/server/guard/read";
@@ -93,6 +95,7 @@ async function Content({ searchParams }: Props) {
                 <TableHead>Role</TableHead>
                 {showOffice && <TableHead>Office</TableHead>}
                 <TableHead>Status</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -108,6 +111,14 @@ async function Content({ searchParams }: Props) {
                   {showOffice && <TableCell>{row.officeName ?? "All offices"}</TableCell>}
                   <TableCell>
                     <Badge variant={row.status === "active" ? "secondary" : "outline"}>{STATUS[row.status]}</Badge>
+                  </TableCell>
+                  <TableCell>
+                    <RowActions>
+                      <RowLink href={`/accounts/${row.id}`} icon={Eye} label="View" />
+                      {actor.permissions.includes("user.manage") && row.id !== actor.id && (row.role === "user" || actor.role === "developer") && (
+                        <AccountStatusButton id={row.id} name={row.name} active={row.status !== "deactivated"} size="sm" />
+                      )}
+                    </RowActions>
                   </TableCell>
                 </TableRow>
               ))}

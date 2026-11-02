@@ -37,6 +37,7 @@ export async function forecastSummary(tx: ScopedTx, now = new Date()) {
 export const forecastAccuracy = (tx: ScopedTx) =>
   tx
     .select({
+      officeId: office.id,
       officeName: office.name,
       items: count(),
       error: sql<number>`round(avg(${forecast.backtestError})::numeric, 2)::float`,
@@ -46,7 +47,7 @@ export const forecastAccuracy = (tx: ScopedTx) =>
     .innerJoin(item, visible)
     .innerJoin(office, eq(forecast.officeId, office.id))
     .where(eq(forecast.state, "ready"))
-    .groupBy(office.name)
+    .groupBy(office.id, office.name)
     .orderBy(asc(office.name));
 
 export const getItemForecast = async (tx: ScopedTx, itemId: string) => {

@@ -134,7 +134,7 @@ export function MoveStockDialog({ itemId, unit, quantity }: { itemId: string; un
   );
 }
 
-export function DeleteItemButton({ id, name }: { id: string; name: string }) {
+export function DeleteItemButton({ id, name, size }: { id: string; name: string; size?: "sm" }) {
   const router = useRouter();
   const { submit, state } = useSubmit(deleteItem);
   return (
@@ -151,7 +151,7 @@ export function DeleteItemButton({ id, name }: { id: string; name: string }) {
         } else if (result) toast.error(result.message);
       }}
     >
-      <Button variant="outline" disabled={state.pending || state.offline}>
+      <Button variant="outline" size={size} disabled={state.pending || state.offline}>
         Delete
       </Button>
     </Confirm>

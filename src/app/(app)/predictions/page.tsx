@@ -1,8 +1,9 @@
-import { CalendarClock, History, PackagePlus, Snail, TrendingUp } from "lucide-react";
+import { CalendarClock, Eye, History, PackagePlus, Snail, TrendingUp } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { TablePagination } from "@/components/data-table/pagination";
+import { RowActions, RowLink } from "@/components/data-table/row-actions";
 import { AccessDenied } from "@/components/feedback/access-denied";
 import { LocalTime } from "@/components/shell/local-time";
 import { EmptyState, PageContainer, PageHeader, StatCard, TableSkeleton } from "@/components/shell/page";
@@ -53,6 +54,7 @@ async function Content({ searchParams }: Props) {
                   <TableHead>Runs out</TableHead>
                   <TableHead>Suggestion</TableHead>
                   <TableHead>Confidence</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -97,6 +99,11 @@ async function Content({ searchParams }: Props) {
                     <TableCell>
                       <ForecastBadge state={row.state} confidence={row.confidence} />
                     </TableCell>
+                    <TableCell>
+                      <RowActions>
+                        <RowLink href={`/inventory/${row.itemId}`} icon={Eye} label="View item" />
+                      </RowActions>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -121,15 +128,21 @@ async function Content({ searchParams }: Props) {
                       <TableHead>Items forecast</TableHead>
                       <TableHead>Average weekly error</TableHead>
                       <TableHead>Simple baseline error</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {accuracy.map((row) => (
-                      <TableRow key={row.officeName}>
+                      <TableRow key={row.officeId}>
                         <TableCell className="font-medium">{row.officeName}</TableCell>
                         <TableCell>{row.items}</TableCell>
                         <TableCell>{row.error}</TableCell>
                         <TableCell>{row.baseline}</TableCell>
+                        <TableCell>
+                          <RowActions>
+                            <RowLink href={`/console/offices/${row.officeId}`} icon={Eye} label="View office" />
+                          </RowActions>
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
