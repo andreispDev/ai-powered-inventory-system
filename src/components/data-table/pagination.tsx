@@ -28,8 +28,23 @@ export function useUrlState() {
   return { params, set, pending };
 }
 
-export function TablePagination({ total, page, pageSize, prefix = "" }: { total: number; page: number; pageSize: number; prefix?: string }) {
-  const { set, pending } = useUrlState();
+/** The pager itself. Live lists keep their place in memory, because a URL change would reload them. */
+export function PagerControls({
+  total,
+  page,
+  pageSize,
+  pending = false,
+  onPage,
+  onSize,
+}: {
+  total: number;
+  page: number;
+  pageSize: number;
+  pending?: boolean;
+  onPage: (page: number) => void;
+  /** Leave out to hide the rows choice, such as in a narrow list */
+  onSize?: (size: number) => void;
+}) {
   const pages = pageCount(total, pageSize);
   const first = total === 0 ? 0 : (page - 1) * pageSize + 1;
   const last = Math.min(page * pageSize, total);
@@ -41,41 +56,41 @@ export function TablePagination({ total, page, pageSize, prefix = "" }: { total:
       </p>
       <div className="flex items-center gap-2">
         {pending && <Loader2 className="text-muted-foreground size-4 animate-spin" aria-label="Loading" />}
-        <label className="text-muted-foreground flex items-center gap-2 text-xs">
-          Rows
-          <NativeSelect
-            className="w-20"
-            value={pageSize}
-            onChange={(event) => set({ [`${prefix}size`]: event.target.value, [`${prefix}page`]: null }, false)}
-          >
-            {PAGE_SIZES.map((size) => (
-              <option key={size}>{size}</option>
-            ))}
-          </NativeSelect>
-        </label>
-        <Button
-          variant="outline"
-          size="icon"
-          disabled={page <= 1}
-          aria-label="Previous page"
-          onClick={() => set({ [`${prefix}page`]: String(page - 1) }, false)}
-        >
+        {onSize && (
+          <label className="text-muted-foreground flex items-center gap-2 text-xs">
+            Rows
+            <NativeSelect className="w-20" value={pageSize} onChange={(event) => onSize(Number(event.target.value))}>
+              {PAGE_SIZES.map((size) => (
+                <option key={size}>{size}</option>
+              ))}
+            </NativeSelect>
+          </label>
+        )}
+        <Button variant="outline" size="icon" disabled={page <= 1} aria-label="Previous page" onClick={() => onPage(page - 1)}>
           <ChevronLeft aria-hidden />
         </Button>
         <span className="tabular-nums">
           {page} / {pages}
         </span>
-        <Button
-          variant="outline"
-          size="icon"
-          disabled={page >= pages}
-          aria-label="Next page"
-          onClick={() => set({ [`${prefix}page`]: String(page + 1) }, false)}
-        >
+        <Button variant="outline" size="icon" disabled={page >= pages} aria-label="Next page" onClick={() => onPage(page + 1)}>
           <ChevronRight aria-hidden />
         </Button>
       </div>
     </div>
+  );
+}
+
+export function TablePagination({ total, page, pageSize, prefix = "" }: { total: number; page: number; pageSize: number; prefix?: string }) {
+  const { set, pending } = useUrlState();
+  return (
+    <PagerControls
+      total={total}
+      page={page}
+      pageSize={pageSize}
+      pending={pending}
+      onPage={(next) => set({ [`${prefix}page`]: String(next) }, false)}
+      onSize={(size) => set({ [`${prefix}size`]: String(size), [`${prefix}page`]: null }, false)}
+    />
   );
 }
 

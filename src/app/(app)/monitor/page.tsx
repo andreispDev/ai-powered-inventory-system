@@ -22,7 +22,7 @@ async function Content() {
       .leftJoin(appUser, eq(auditLog.actorId, appUser.id))
       .where(sql`${auditLog.action} <> 'platform.viewed'`)
       .orderBy(desc(auditLog.at), desc(auditLog.id))
-      .limit(50),
+      .limit(300),
   );
 
   return (
