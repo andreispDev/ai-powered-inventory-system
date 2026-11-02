@@ -47,6 +47,7 @@ export function ItemsTable({
   canEdit = false,
   canDelete = false,
   records = false,
+  manageColumnsHref,
 }: {
   rows: ItemRow[];
   fields: readonly FieldDef[];
@@ -57,6 +58,8 @@ export function ItemsTable({
   canEdit?: boolean;
   canDelete?: boolean;
   records?: boolean;
+  /** The category's own settings, when one is showing and this person may edit it */
+  manageColumnsHref?: string;
 }) {
   const base = records ? "/records" : "/inventory";
   const { params, set, pending } = useUrlState();
@@ -135,7 +138,15 @@ export function ItemsTable({
 
   return (
     <>
-      <div className="flex justify-end px-3 pt-3">
+      <div className="flex flex-wrap justify-end gap-2 px-3 pt-3">
+        {manageColumnsHref && (
+          <Button variant="outline" size="sm" asChild>
+            <Link href={manageColumnsHref}>
+              <Pencil aria-hidden />
+              Edit columns
+            </Link>
+          </Button>
+        )}
         <Popover>
           <PopoverTrigger asChild>
             <Button variant="outline" size="sm">

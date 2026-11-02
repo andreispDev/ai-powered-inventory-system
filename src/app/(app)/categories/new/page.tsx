@@ -20,7 +20,7 @@ async function Content({ searchParams }: Props) {
   const defaultKind = param(await searchParams, "kind") === "records" ? "records" : "stock";
   return (
     <PageContainer width="narrow">
-      <PageHeader title="New category" description="You'll add its columns on the next screen." />
+      <PageHeader title="New category" description="Choose what it holds and which columns it needs." />
       <Card>
         <CardContent>
           <CategoryForm parents={categories.filter((c) => !c.archivedAt).map(({ id, name, kind }) => ({ id, name, kind }))} defaultKind={defaultKind} />

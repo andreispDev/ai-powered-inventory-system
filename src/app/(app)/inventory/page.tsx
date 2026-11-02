@@ -35,7 +35,9 @@ async function Content({ searchParams }: Props) {
 
   const data = await readScoped(actor, async (tx) => {
     const categories = (await listCategories(tx)).filter((row) => row.kind === "stock");
-    const fields = categoryId ? await listFields(tx, categoryId) : [];
+    // With only one category, its columns show without having to choose it.
+    const fieldsCategoryId = categoryId ?? (categories.length === 1 ? categories[0].id : undefined);
+    const fields = fieldsCategoryId ? await listFields(tx, fieldsCategoryId) : [];
     const attributes: Record<string, string> = {};
     for (const field of fields) {
       const value = param(params, `f_${field.key}`);
@@ -54,8 +56,8 @@ async function Content({ searchParams }: Props) {
       limit: pageSize,
     });
     const people = fields.some((field) => field.type === "person") ? await listPeople(tx) : [];
-    const selected = categoryId ? await getCategory(tx, categoryId) : undefined;
-    return { categories, fields, rows, total, people, hideLocation: !!selected?.disabledFields.includes("location") };
+    const selected = fieldsCategoryId ? await getCategory(tx, fieldsCategoryId) : undefined;
+    return { categories, fieldsCategoryId, fields, rows, total, people, hideLocation: !!selected?.disabledFields.includes("location") };
   });
 
   const canCreate = actor.permissions.includes("item.create");
@@ -103,6 +105,7 @@ async function Content({ searchParams }: Props) {
         ))}
         {canRestore && <TableFilter name="view" label="Show" options={[{ value: "deleted", label: "Deleted items" }]} />}
       </div>
+      {!data.fieldsCategoryId && data.categories.length > 1 && <p className="text-muted-foreground text-xs">Choose a category to see its own columns.</p>}
       {data.total === 0 ? (
         <EmptyState
           icon={Boxes}
@@ -116,8 +119,9 @@ async function Content({ searchParams }: Props) {
             fields={data.fields}
             people={Object.fromEntries(data.people.map((person) => [person.id, person.name]))}
             showOffice={!actor.officeId}
-            storageKey={categoryId ?? "all"}
+            storageKey={data.fieldsCategoryId ?? "all"}
             hideLocation={data.hideLocation}
+            manageColumnsHref={data.fieldsCategoryId && actor.permissions.includes("category.update") ? `/categories/${data.fieldsCategoryId}` : undefined}
             canEdit={actor.permissions.includes("item.update")}
             canDelete={actor.permissions.includes("item.delete")}
           />

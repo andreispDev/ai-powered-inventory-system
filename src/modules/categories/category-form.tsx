@@ -1,20 +1,25 @@
 "use client";
 
-import { AlignLeft, Boxes, FileText, FolderTree, type LucideIcon, Tag } from "lucide-react";
+import { AlignLeft, Boxes, Columns3, FileText, FolderTree, type LucideIcon, Plus, Tag, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { FormActions, FormError, FormField } from "@/components/forms/form";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
 import { useSubmit } from "@/hooks/use-submit";
 import { createCategory } from "./actions";
+import { FIELD_TYPES, isChoice, OPTIONAL_ITEM_FIELDS, type FieldType, type OptionalItemField } from "./field-schema";
 
 const KINDS: { value: "stock" | "records"; label: string; icon: LucideIcon; help: string }[] = [
   { value: "stock", label: "Stock items", icon: Boxes, help: "Counted things in inventory, with quantities, stock moves and predictions." },
   { value: "records", label: "Custom records", icon: FileText, help: "Anything else, such as work papers. Just your own columns, kept out of inventory." },
 ];
+
+type Column = { rowId: number; label: string; type: FieldType; required: boolean; options: string };
 
 export function CategoryForm({
   parents,
@@ -29,12 +34,34 @@ export function CategoryForm({
   const [description, setDescription] = useState("");
   const [parentId, setParentId] = useState("");
   const [kind, setKind] = useState(defaultKind);
+  const [columns, setColumns] = useState<Column[]>([{ rowId: 0, label: "", type: "text", required: false, options: "" }]);
+  const [nextRow, setNextRow] = useState(1);
+  const [hidden, setHidden] = useState<OptionalItemField[]>([]);
+  const standard = OPTIONAL_ITEM_FIELDS.filter((field) => kind === "stock" || field.id === "location");
+  const change = (rowId: number, changes: Partial<Column>) => setColumns(columns.map((column) => (column.rowId === rowId ? { ...column, ...changes } : column)));
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
-    const result = await submit({ name, description, kind, parentId: parentId || undefined });
+    const result = await submit({
+      name,
+      description,
+      kind,
+      parentId: parentId || undefined,
+      disabledFields: hidden.filter((field) => standard.some((option) => option.id === field)),
+      // Rows left blank are just unused.
+      columns: columns
+        .filter((column) => column.label.trim())
+        .map((column) => ({
+          label: column.label,
+          type: column.type,
+          config: {
+            required: column.required,
+            options: isChoice(column.type) ? column.options.split(",").map((option) => option.trim()).filter(Boolean) : undefined,
+          },
+        })),
+    });
     if (!result?.ok) return;
-    toast.success("Category created. Now add its columns.");
+    toast.success("Category created.");
     router.push(`/categories/${result.data.id}`);
   }
 
@@ -90,6 +117,71 @@ export function CategoryForm({
           ))}
         </NativeSelect>
       </FormField>
+      <fieldset className="space-y-3 rounded-lg border p-3">
+        <legend className="flex items-center gap-1.5 px-1 text-sm font-medium">
+          <Columns3 className="text-primary size-4" aria-hidden />
+          Which columns should it have?
+        </legend>
+        <p className="text-muted-foreground text-xs">These become the fields on its form and the columns in its table. You can change them later.</p>
+        {columns.map((column, index) => (
+          <div key={column.rowId} className="space-y-2 rounded-md border p-2.5">
+            <div className="flex flex-wrap items-center gap-2">
+              <Input
+                aria-label={`Column ${index + 1} name`}
+                placeholder={kind === "records" ? "Such as Client or Due date" : "Such as Brand or Warranty"}
+                className="min-w-40 flex-1"
+                maxLength={60}
+                value={column.label}
+                onChange={(event) => change(column.rowId, { label: event.target.value })}
+              />
+              <NativeSelect aria-label={`Column ${index + 1} type`} className="w-40" value={column.type} onChange={(event) => change(column.rowId, { type: event.target.value as FieldType })}>
+                {FIELD_TYPES.map((type) => (
+                  <option key={type.id} value={type.id}>
+                    {type.label}
+                  </option>
+                ))}
+              </NativeSelect>
+              <label className="flex items-center gap-1.5 text-sm">
+                <Checkbox checked={column.required} onCheckedChange={(checked) => change(column.rowId, { required: checked === true })} />
+                Required
+              </label>
+              <Button type="button" variant="ghost" size="icon-sm" aria-label={`Remove column ${index + 1}`} onClick={() => setColumns(columns.filter((other) => other.rowId !== column.rowId))}>
+                <X aria-hidden />
+              </Button>
+            </div>
+            {isChoice(column.type) && (
+              <Input aria-label={`Column ${index + 1} choices`} placeholder="Choices, separated with commas" value={column.options} onChange={(event) => change(column.rowId, { options: event.target.value })} />
+            )}
+          </div>
+        ))}
+        {state.fieldErrors.options && <p role="alert" className="text-destructive text-sm">A choice column needs at least one choice.</p>}
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            setColumns([...columns, { rowId: nextRow, label: "", type: "text", required: false, options: "" }]);
+            setNextRow(nextRow + 1);
+          }}
+        >
+          <Plus aria-hidden />
+          Add a column
+        </Button>
+        <div className="border-t pt-3">
+          <p className="mb-2 text-sm font-medium">Standard fields to include</p>
+          <div className="flex flex-wrap gap-x-4 gap-y-2">
+            {standard.map((field) => (
+              <label key={field.id} className="flex items-center gap-1.5 text-sm">
+                <Checkbox
+                  checked={!hidden.includes(field.id)}
+                  onCheckedChange={(checked) => setHidden(checked === true ? hidden.filter((name) => name !== field.id) : [...hidden, field.id])}
+                />
+                {field.label}
+              </label>
+            ))}
+          </div>
+        </div>
+      </fieldset>
       <FormError state={state} />
       <FormActions state={state} submitLabel="Create category" />
     </form>

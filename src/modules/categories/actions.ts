@@ -56,10 +56,21 @@ const categoryInput = z.object({
     .optional(),
 });
 
+const newColumn = z.object({
+  label: z.string().trim().min(1, "Enter a column name.").max(60),
+  type: z.enum(FIELD_TYPES.map((t) => t.id) as [FieldType, ...FieldType[]]),
+  config: fieldConfigSchema,
+});
+
 export const createCategory = guard({
   permission: "category.create",
-  input: categoryInput.extend({ parentId: z.uuid().optional(), kind: z.enum(["stock", "records"]).default("stock") }),
-  run: async ({ input, tx, actor, audit }) => {
+  input: categoryInput.extend({
+    parentId: z.uuid().optional(),
+    kind: z.enum(["stock", "records"]).default("stock"),
+    columns: z.array(newColumn).max(MAX_FIELDS_PER_CATEGORY).default([]),
+    disabledFields: z.array(z.enum(OPTIONAL_ITEM_FIELDS.map((f) => f.id) as [OptionalItemField, ...OptionalItemField[]])).default([]),
+  }),
+  run: async ({ input: { columns, ...input }, tx, actor, audit }) => {
     const officeId = officeOf(actor);
     if (input.parentId && (await depthOf(tx, input.parentId)) >= MAX_DEPTH) {
       throw new AppError("VALIDATION", "Categories can be nested up to 3 levels.", {
@@ -80,7 +91,15 @@ export const createCategory = guard({
       if (isUniqueViolation(error)) throw nameTaken();
       throw error;
     }
-    await audit({ action: "category.created", entityType: "category", entityId: row.id, after: input });
+    // In the same transaction, so a bad column leaves no half-made category behind.
+    const taken: string[] = [];
+    for (const [index, column] of columns.entries()) {
+      checkChoiceOptions(column.type, column.config);
+      const key = keyFromLabel(column.label, taken);
+      taken.push(key);
+      await tx.insert(categoryField).values({ officeId, categoryId: row.id, key, label: column.label, type: column.type, config: column.config, position: index + 1 });
+    }
+    await audit({ action: "category.created", entityType: "category", entityId: row.id, after: { ...input, columns } });
     revalidatePath("/categories");
     return { id: row.id };
   },

@@ -9,7 +9,7 @@ import { EmptyState, PageContainer, PageHeader, TableSkeleton } from "@/componen
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { param, parsePage, type SearchParams } from "@/lib/pagination";
-import { listCategories, listFields } from "@/modules/categories/queries";
+import { getCategory, listCategories, listFields } from "@/modules/categories/queries";
 import { ItemsTable } from "@/modules/inventory/items-table";
 import { listItems, listPeople } from "@/modules/inventory/queries";
 import { requireActor } from "@/server/auth/session";
@@ -33,12 +33,20 @@ async function Content({ searchParams }: Props) {
 
   const data = await readScoped(actor, async (tx) => {
     const categories = (await listCategories(tx)).filter((row) => row.kind === "records");
-    const fields = categoryId ? await listFields(tx, categoryId) : [];
+    // With only one category, its columns show without having to choose it.
+    const fieldsCategoryId = categoryId ?? (categories.length === 1 ? categories[0].id : undefined);
+    const fields = fieldsCategoryId ? await listFields(tx, fieldsCategoryId) : [];
+    const attributes: Record<string, string> = {};
+    for (const field of fields) {
+      const value = param(params, `f_${field.key}`);
+      if (value) attributes[field.key] = value;
+    }
     const { rows, total } = await listItems(tx, {
       kind: "records",
       q,
       categoryId,
       deleted,
+      attributes,
       sort: param(params, "sort"),
       direction: param(params, "dir") === "desc" ? "desc" : "asc",
       fields,
@@ -46,10 +54,12 @@ async function Content({ searchParams }: Props) {
       limit: pageSize,
     });
     const people = fields.some((field) => field.type === "person") ? await listPeople(tx) : [];
-    return { categories, fields, rows, total, people };
+    const selected = fieldsCategoryId ? await getCategory(tx, fieldsCategoryId) : undefined;
+    return { categories, fieldsCategoryId, fields, rows, total, people, hideLocation: !!selected?.disabledFields.includes("location") };
   });
 
   const canCreate = actor.permissions.includes("item.create");
+  const filterable = data.fields.filter((field) => field.type === "select" || field.type === "multi_select" || field.type === "boolean");
 
   return (
     <PageContainer width="wide">
@@ -70,8 +80,24 @@ async function Content({ searchParams }: Props) {
       <div className="flex flex-wrap items-center gap-2">
         <TableSearch placeholder="Search name or reference…" />
         <TableFilter name="category" label="Category" options={data.categories.map((row) => ({ value: row.id, label: actor.officeId ? row.name : `${row.officeName}: ${row.name}` }))} />
+        {filterable.map((field) => (
+          <TableFilter
+            key={field.key}
+            name={`f_${field.key}`}
+            label={field.label}
+            options={
+              field.type === "boolean"
+                ? [
+                    { value: "true", label: "Yes" },
+                    { value: "false", label: "No" },
+                  ]
+                : (field.config.options ?? []).map((option) => ({ value: option, label: option }))
+            }
+          />
+        ))}
         {canRestore && <TableFilter name="view" label="Show" options={[{ value: "deleted", label: "Deleted records" }]} />}
       </div>
+      {!data.fieldsCategoryId && data.categories.length > 1 && <p className="text-muted-foreground text-xs">Choose a category to see its own columns.</p>}
       {data.total === 0 ? (
         <EmptyState
           icon={FileText}
@@ -86,7 +112,9 @@ async function Content({ searchParams }: Props) {
             fields={data.fields}
             people={Object.fromEntries(data.people.map((person) => [person.id, person.name]))}
             showOffice={!actor.officeId}
-            storageKey={`records:${categoryId ?? "all"}`}
+            storageKey={`records:${data.fieldsCategoryId ?? "all"}`}
+            hideLocation={data.hideLocation}
+            manageColumnsHref={data.fieldsCategoryId && actor.permissions.includes("category.update") ? `/categories/${data.fieldsCategoryId}` : undefined}
             canEdit={actor.permissions.includes("item.update")}
             canDelete={actor.permissions.includes("item.delete")}
           />
