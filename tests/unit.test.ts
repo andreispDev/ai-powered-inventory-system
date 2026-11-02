@@ -4,6 +4,7 @@ import { crumbsFor } from "@/components/shell/breadcrumbs";
 import { buildPdf, exportFileName, toCsv, type ExportTable } from "@/lib/export-format";
 import { parsePage } from "@/lib/pagination";
 import { ancestorsOf, withDescendants } from "@/modules/categories/tree";
+import { emailChangedEmail, signInCodeEmail } from "@/server/auth/email-templates";
 import { IDLE_LIMIT_MS, isPastIdleLimit } from "@/server/auth/idle";
 import { canStartSession, isPastAbsoluteLimit } from "@/server/auth/sign-in-rules";
 import { effectivePermissions, isAllowed, type Grant } from "@/server/authz/catalog";
@@ -299,5 +300,29 @@ describe("idle sign-out", () => {
     expect(isPastIdleLimit(ago(IDLE_LIMIT_MS), now)).toBe(false);
     expect(isPastIdleLimit(ago(IDLE_LIMIT_MS + 60_000), now)).toBe(false);
     expect(isPastIdleLimit(ago(IDLE_LIMIT_MS + 91_000), now)).toBe(true);
+  });
+});
+
+describe("emails", () => {
+  it("shows the code in the subject, the text and the design", () => {
+    const email = signInCodeEmail("482913");
+    expect(email.subject).toContain("482913");
+    expect(email.text).toContain("482913");
+    expect(email.html).toContain("482913");
+    expect(email.html).toContain("expires in 5 minutes");
+  });
+
+  it("escapes anything inserted into the design", () => {
+    expect(signInCodeEmail("<script>").html).not.toContain("<script>");
+  });
+
+  it("loads nothing from outside, so nothing tracks whoever opens it", () => {
+    for (const { html } of [signInCodeEmail("123456"), emailChangedEmail()]) {
+      expect(html).not.toMatch(/<img|<script|https?:\/\//i);
+    }
+  });
+
+  it("always has a plain text version", () => {
+    expect(emailChangedEmail().text).toContain("can no longer sign in");
   });
 });

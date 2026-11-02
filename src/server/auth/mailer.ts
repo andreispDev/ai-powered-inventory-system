@@ -1,6 +1,7 @@
 import "server-only";
 import nodemailer from "nodemailer";
 import { env } from "../env";
+import { emailChangedEmail, signInCodeEmail } from "./email-templates";
 
 function transporter() {
   const { SMTP_USER, SMTP_APP_PASSWORD } = env();
@@ -21,8 +22,7 @@ export async function sendSignInCode(email: string, code: string) {
   await mail.transport.sendMail({
     from: mail.from,
     to: email,
-    subject: `${code} is your Inventory sign-in code`,
-    text: `Your sign-in code is ${code}.\n\nIt expires in 5 minutes. If you didn't ask for it, you can ignore this email.`,
+    ...signInCodeEmail(code),
   });
 }
 
@@ -36,7 +36,6 @@ export async function sendEmailChangedNotice(oldEmail: string) {
   await mail.transport.sendMail({
     from: mail.from,
     to: oldEmail,
-    subject: "Your Inventory sign-in email was changed",
-    text: "An administrator changed the email address for your Inventory account, and this address can no longer sign in.\n\nIf you didn't expect this, contact your administrator.",
+    ...emailChangedEmail(),
   });
 }
