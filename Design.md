@@ -385,7 +385,7 @@ The reusable set in `components/skeletons/`: KPI card, chart, table (matching ro
 
 | Role | Emphasis | Lead widgets |
 |---|---|---|
-| Developer | System and cross-office | Health, online now, offices at risk, jobs, AI cost, pending requests |
+| Developer | System and cross-office | Health, online now, offices at risk, jobs, AI speed and queue, pending requests |
 | Admin | Office oversight | KPIs, predictions, live staff activity, pending transfers |
 | User | Personal work | My tasks, assigned to me, recent items, announcements, quick actions |
 
@@ -409,7 +409,7 @@ A matrix with permissions by group as rows, and role default plus any override a
 
 ### Assistant
 
-Available as a right-hand panel via the navbar or Ctrl/Cmd+J, and as a full page. It streams its answer, shows steps such as "Looking at stock movements…", and has inline **citation chips** that open the source record. Tables use the standard styling. Starter prompts fit the user's role. A short note says that answers can be wrong and to check the sources. Thumbs up/down sits under each answer.
+Available as a right-hand panel via the navbar or Ctrl/Cmd+J, and as a full page. Local AI can be slow, so it shows the queue position ("2 people ahead of you") and a Stop button. It streams its answer, shows steps such as "Looking at stock movements…", and has inline **citation chips** that open the source record. Tables use the standard styling. Starter prompts fit the user's role. A short note says that answers can be wrong and to check the sources. Thumbs up/down sits under each answer.
 
 ### Predictions
 

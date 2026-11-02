@@ -51,7 +51,7 @@ The build proceeds on these unless changed. The first three would change the arc
 
 | # | Assumption | If wrong |
 |---|---|---|
-| A1 | **"Isolated" means private to one organization, not air-gapped.** Google login and the AI services need internet access, and AI features send the relevant inventory data to the Claude API and an embeddings provider. | An air-gapped or no-external-AI requirement means self-hosted login and models, which is a major redesign |
+| A1 | **"Isolated" means private to one organization, not air-gapped.** Google login needs internet access. AI runs on Ollama on our own machine, so inventory data isn't sent to an outside AI service. | An air-gapped requirement means replacing Google login with a self-hosted sign-in |
 | A2 | **Each user belongs to exactly one office.** | Multi-office users need a membership table and an office switcher |
 | A3 | **Developers can see all offices but do not edit office inventory.** They are read-only on inventory, and every view of office data is logged. | Giving developers write access is a small permission change, but it weakens the audit story |
 | A4 | Scale target: 50 offices, 2,000 accounts, 1 million items, 500 concurrent users | The design scales further, but infrastructure sizing changes |
@@ -211,7 +211,7 @@ Example from the brief: "This item was given to this office since (date), by (pe
 | LOG-4 | Admins see all actions in their office. Developers see everything. Users see their own | P0 |
 | LOG-5 | Logs can be filtered by person, action, record, office and date, and each entry shows a before/after comparison | P0 |
 | LOG-6 | Log export, itself logged | P1 |
-| LOG-7 | Developers can also see system events: errors, job runs and failures, rate-limit hits, AI usage and cost | P0 |
+| LOG-7 | Developers can also see system events: errors, job runs and failures, rate-limit hits, AI usage and response times | P0 |
 | LOG-8 | A Developer viewing office data is itself logged | P0 |
 
 **Real-time monitoring**
@@ -220,14 +220,14 @@ Example from the brief: "This item was given to this office since (date), by (pe
 |---|---|---|
 | MON-1 | Developers see a live activity feed across all accounts, and who is online per office. Admins see the same for their office | P0 |
 | MON-2 | The feed can be filtered and paused, and catches up after reconnecting without missing events | P0 |
-| MON-3 | A Developer health view shows system status, job queues, error rate, response times, and AI cost | P0 |
+| MON-3 | A Developer health view shows system status, job queues, error rate, response times, and AI queue length and speed | P0 |
 | MON-4 | Alerts for unusual activity such as many failed sign-ins, mass deletes, or large exports | P1 |
 
 ### 4.10 Dashboards (FR-DASH)
 
 | Role | Contents | Priority |
 |---|---|---|
-| **Developer** | Offices, accounts, online now, system health, job status, activity across offices, stock risk by office, AI usage and cost, pending permission requests | P0 |
+| **Developer** | Offices, accounts, online now, system health, job status, activity across offices, stock risk by office, AI usage and speed, pending permission requests | P0 |
 | **Admin** | Office stock value and counts, low and predicted stock-outs, live staff activity, pending transfers, recent changes, staff list | P0 |
 | **User** | My recent work, items needing attention, assignments to me, announcements, quick actions, predictions for my office | P0 |
 
@@ -284,7 +284,7 @@ Full specification in [Design.md](Design.md).
 |---|---|
 | **Availability** | 99.9% monthly for core features. AI, real-time updates and exports can fail without affecting them |
 | **Recovery** | At most 5 minutes of data loss (RPO) and 1 hour to restore (RTO). Restores are rehearsed quarterly |
-| **Performance** | p95: page data under 300 ms, mutation under 500 ms, first AI words under 3 s, real-time event under 2 s. Budgets at the A4 scale |
+| **Performance** | p95: page data under 300 ms, mutation under 500 ms, real-time event under 2 s. Budgets at the A4 scale. AI speed depends on the machine: on the current PC (CPU only, about 12 tokens per second in a first test), people see their queue position and answers as they are written. The AI speed target is set when the final machine is chosen |
 | **Scalability** | App instances are stateless and can be added horizontally. Background work runs separately from web traffic |
 | **Rate limiting** | Per user and per IP, with stricter limits on sign-in, AI, and exports. Limited requests get a clear "try again in N seconds" |
 | **Security** | OWASP ASVS Level 2 as the target. Security headers, encrypted transport and storage, no secrets in code, dependency scanning, and an external penetration test before launch |
@@ -336,7 +336,9 @@ Full specification in [Design.md](Design.md).
 | Inventory text manipulates the AI (prompt injection) | High | Read-only tools, scope taken from the session and never from the model, no links or images from model output to outside sites, red-team evaluation cases |
 | Developer accounts hold broad access | High | Recent sign-in for sensitive actions, read-only inventory, full logging, a small number of accounts |
 | Forecasts are wrong or trusted too much | Medium | Confidence, "not enough history", backtesting, advisory only |
-| AI cost grows unexpectedly | Medium | Per-user limits, prompt caching, a monthly budget alert, a usage dashboard |
+| Local AI is slow when several people use it | High | Queue with visible position, per-user limits, the rest of the app unaffected, a stronger machine before wider rollout |
+| The small model gives wrong answers | High | Exact numbers come from database tools, answers cite records, the evaluation set must pass, and the model can be changed by config |
+| The machine running the app is off or fails | High | Only suitable for development on one PC. Choose an always-on machine with backups before real offices use it |
 | Custom columns become slow at scale | Medium | Column limits, targeted indexes, load tests at target scale |
 | Audit data grows large | Medium | Monthly partitions, archiving per retention policy |
 | Next.js 16 features change, some being experimental | Low | Pinned versions, thin wrappers around experimental APIs, upgrade testing |
@@ -346,6 +348,5 @@ Full specification in [Design.md](Design.md).
 ## 9. Open decisions for the product owner
 
 1. Confirm assumptions A1, A2 and A3, since they affect the architecture.
-2. Confirm whether the organization's data policy allows inventory data to go to the Claude API and an embeddings provider.
-3. Provide audit retention rules (A5), if legal or policy requirements exist.
-4. Name the hosting target. The plan assumes containers on a server or cloud the organization controls.
+2. Provide audit retention rules (A5), if legal or policy requirements exist.
+3. Choose the final machine before real offices use the app. Development runs on the current PC for now, and Vercel is not used.

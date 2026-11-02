@@ -126,7 +126,7 @@ src/app/
 │  ├─ system/
 │  │  ├─ page.tsx                     Health
 │  │  └─ jobs/page.tsx                Queues and failures
-│  ├─ ai/page.tsx                     Usage, cost, forecast accuracy
+│  ├─ ai/page.tsx                     Usage, speed, queue, forecast accuracy
 │  └─ announcements/page.tsx          Global announcements
 │
 └─ api/                               Only what Server Actions can't do
@@ -246,8 +246,8 @@ src/server/
 │  └─ tags.ts            Typed, office-scoped tag builders
 ├─ rate-limit/           Sliding window and limit classes
 ├─ ai/
-│  ├─ anthropic.ts       Claude client and model config
-│  └─ embedder.ts        Embedder interface and Voyage implementation
+│  ├─ llm.ts             LlmClient interface, Ollama implementation, AI queue
+│  └─ embedder.ts        Embedder interface and Ollama implementation
 ├─ storage/              S3-compatible client, signed URLs
 ├─ observability/        Logger and metrics
 └─ env.ts                Zod-validated environment
@@ -334,8 +334,7 @@ Validated by `server/env.ts` at boot, so a bad deploy fails immediately. `.env.e
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Sign-in |
 | `GOOGLE_ALLOWED_HD` | Optional Workspace domain restriction |
 | `BOOTSTRAP_DEVELOPER_EMAIL` | First Developer (used by the CLI only) |
-| `ANTHROPIC_API_KEY`, `AI_MODEL` | Assistant |
-| `VOYAGE_API_KEY`, `EMBEDDING_MODEL` | Embeddings |
+| `OLLAMA_URL`, `AI_MODEL`, `EMBEDDING_MODEL` | Local AI: `http://127.0.0.1:11434`, `llama3.2:3b`, `nomic-embed-text` |
 | `S3_ENDPOINT`, `S3_BUCKET`, `S3_ACCESS_KEY`, `S3_SECRET_KEY` | Files |
 | `NEXT_SERVER_ACTIONS_ENCRYPTION_KEY`, `DEPLOYMENT_VERSION` | Multi-instance deploys |
 | `OTEL_EXPORTER_OTLP_ENDPOINT`, `SENTRY_DSN` | Observability |
@@ -355,3 +354,14 @@ Validated by `server/env.ts` at boot, so a bad deploy fails immediately. `.env.e
 | `db:generate`, `db:migrate`, `db:seed` | Database |
 | `bootstrap:developer` | Create the first Developer |
 | `audit:verify` | Verify the audit hash chain |
+
+---
+
+## 13. Git branches
+
+| Branch | Purpose |
+|---|---|
+| `staging` | All commits go here first |
+| `main` | Receives work from `staging` only, after the product owner approves |
+
+Never commit directly to `main`. The repo currently has only `master` and no remote, so these branches still need creating.
