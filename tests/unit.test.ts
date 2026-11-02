@@ -5,7 +5,7 @@ import { buildPdf, exportFileName, toCsv, type ExportTable } from "@/lib/export-
 import { parsePage } from "@/lib/pagination";
 import { ancestorsOf, withDescendants } from "@/modules/categories/tree";
 import { emailChangedEmail, signInCodeEmail } from "@/server/auth/email-templates";
-import { IDLE_LIMIT_MS, isPastIdleLimit } from "@/server/auth/idle";
+import { DEFAULT_IDLE_MINUTES, isPastIdleLimit } from "@/server/auth/idle";
 import { canStartSession, isPastAbsoluteLimit } from "@/server/auth/sign-in-rules";
 import { effectivePermissions, isAllowed, type Grant } from "@/server/authz/catalog";
 import { contrast, themeTokens, THEMES, type Oklch } from "@/lib/theme-tokens";
@@ -289,17 +289,17 @@ describe("category tree", () => {
 
 describe("idle sign-out", () => {
   const now = new Date("2026-11-03T10:00:00Z");
-  const ago = (ms: number) => new Date(now.getTime() - ms);
+  const minutes = (count: number) => new Date(now.getTime() - count * 60_000);
 
-  it("is five minutes", () => {
-    expect(IDLE_LIMIT_MS).toBe(300_000);
+  it("defaults to five minutes", () => {
+    expect(DEFAULT_IDLE_MINUTES).toBe(5);
   });
 
-  it("lets the server allow for the browser's reporting gap, then ends the session", () => {
-    expect(isPastIdleLimit(ago(60_000), now)).toBe(false);
-    expect(isPastIdleLimit(ago(IDLE_LIMIT_MS), now)).toBe(false);
-    expect(isPastIdleLimit(ago(IDLE_LIMIT_MS + 60_000), now)).toBe(false);
-    expect(isPastIdleLimit(ago(IDLE_LIMIT_MS + 91_000), now)).toBe(true);
+  it("follows the limit a Developer sets, with room for the browser's reporting gap", () => {
+    expect(isPastIdleLimit(minutes(6), 5, now)).toBe(false);
+    expect(isPastIdleLimit(minutes(7), 5, now)).toBe(true);
+    expect(isPastIdleLimit(minutes(7), 30, now)).toBe(false);
+    expect(isPastIdleLimit(minutes(32), 30, now)).toBe(true);
   });
 });
 

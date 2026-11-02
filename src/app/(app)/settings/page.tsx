@@ -2,10 +2,17 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { PageContainer, PageHeader, PageSkeleton } from "@/components/shell/page";
 import { AppearanceSettings } from "@/modules/preferences/appearance-settings";
+import { SessionSettings } from "@/modules/preferences/session-settings";
 import { WorkspaceSettings } from "@/modules/preferences/workspace-settings";
 import { requireActor } from "@/server/auth/session";
 
 export const metadata: Metadata = { title: "Settings" };
+
+async function SessionControl() {
+  const actor = await requireActor();
+  if (!actor.permissions.includes("system.configure")) return null;
+  return <SessionSettings minutes={actor.idleMinutes} />;
+}
 
 async function Workspace() {
   const actor = await requireActor();
@@ -19,6 +26,7 @@ export default function SettingsPage() {
       <PageHeader title="Settings" description="Your workspace and how the app looks." />
       <Suspense fallback={<PageSkeleton />}>
         <Workspace />
+        <SessionControl />
       </Suspense>
       <AppearanceSettings />
     </PageContainer>

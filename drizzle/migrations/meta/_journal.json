@@ -155,6 +155,20 @@
       "when": 1793643760672,
       "tag": "0021_session_activity",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1793645243979,
+      "tag": "0022_system_setting",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1793645245708,
+      "tag": "0023_system_setting_security",
+      "breakpoints": true
     }
   ]
 }

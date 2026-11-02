@@ -193,6 +193,25 @@ describe("audit log", () => {
   });
 });
 
+describe("system settings", () => {
+  const minutes = async () => (await db.select().from(schema.systemSetting))[0].idleMinutes;
+
+  it("starts at five minutes, and only a Developer can change it", async () => {
+    expect(await minutes()).toBe(5);
+    await asApp(scopeA, (tx) => tx.update(schema.systemSetting).set({ idleMinutes: 480 }));
+    expect(await minutes()).toBe(5);
+    await asApp({ kind: "platform", userId: DEVELOPER }, (tx) => tx.update(schema.systemSetting).set({ idleMinutes: 15 }));
+    expect(await minutes()).toBe(15);
+    await db.update(schema.systemSetting).set({ idleMinutes: 5 });
+  });
+
+  it("refuses limits out of range, and a second row", async () => {
+    expect(await failure(db.update(schema.systemSetting).set({ idleMinutes: 0 }))).not.toBeNull();
+    expect(await failure(db.update(schema.systemSetting).set({ idleMinutes: 481 }))).not.toBeNull();
+    expect(await failure(db.insert(schema.systemSetting).values({ id: 2 }))).not.toBeNull();
+  });
+});
+
 describe("account rules", () => {
   it("won't let an office touch a Developer's or another office's sign-in email", async () => {
     await asApp(scopeA, (tx) => tx.update(appUser).set({ email: "taken@example.test" }).where(eq(appUser.id, DEVELOPER)));

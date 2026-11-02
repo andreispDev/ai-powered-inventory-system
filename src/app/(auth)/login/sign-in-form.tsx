@@ -75,7 +75,7 @@ export function SignInForm() {
       <form onSubmit={submitEmail} className="space-y-4">
         {idle && (
           <p role="status" className="bg-muted rounded-lg px-3 py-2 text-sm">
-            You were signed out after 5 minutes of inactivity.
+            You were signed out because of inactivity.
           </p>
         )}
         <div className="space-y-2">

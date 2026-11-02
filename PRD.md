@@ -106,7 +106,7 @@ Priority: **P0** is required for launch, **P1** follows soon after launch, **P2*
 | AUTH-2 | Invite-only: an email can sign in only if it was provisioned first. Unknown emails get the same on-screen response and no email, so the form doesn't reveal who has an account. Sign-in attempts are logged | P0 |
 | AUTH-3 | Codes have 6 digits, expire in 5 minutes, are stored hashed, and stop working after 3 wrong tries. An email can request 5 codes per 15 minutes | P0 |
 | AUTH-4 | Deactivating an account ends its sessions immediately | P0 |
-| AUTH-5 | Sessions end after 5 minutes of inactivity, with a 30-second warning, or 7 days in total, and users can see and revoke their own sessions | P0 |
+| AUTH-5 | Sessions end after a period of inactivity set by a Developer (5 minutes by default, 1 to 480 allowed), with a 30-second warning, or 7 days in total, and users can see and revoke their own sessions | P0 |
 | AUTH-6 | Developers must have signed in within the last 15 minutes to perform sensitive actions (permission changes, office deletion, global announcements) | P1 |
 | AUTH-7 | The first Developer is created by a command-line step during setup, never through the UI. The last active Developer cannot be deactivated | P0 |
 

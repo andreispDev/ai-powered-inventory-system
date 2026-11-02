@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { signOut } from "@/lib/auth-client";
-import { IDLE_LIMIT_MS, IDLE_WARNING_MS } from "@/server/auth/idle";
+import { IDLE_WARNING_MS } from "@/server/auth/idle";
 
 const STORAGE_KEY = "last-activity";
 const HEARTBEAT_MS = 60_000;
@@ -18,13 +18,18 @@ const readShared = () => {
   }
 };
 
-/** Signs out after 5 minutes with no activity in any tab. The server enforces the same limit. */
-export function IdleGuard() {
+/** Signs out after the set time with no activity in any tab. The server enforces the same limit. */
+export function IdleGuard({ minutes }: { minutes: number }) {
   const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
   const lastActivity = useRef(0);
   const lastBeat = useRef(0);
   const warning = useRef(false);
   const ending = useRef(false);
+  // A Developer can change this while the page is open.
+  const limit = useRef(minutes * 60_000);
+  useEffect(() => {
+    limit.current = minutes * 60_000;
+  }, [minutes]);
 
   const beat = () => {
     lastBeat.current = Date.now();
@@ -54,15 +59,15 @@ export function IdleGuard() {
 
     const tick = setInterval(() => {
       const idle = Date.now() - Math.max(lastActivity.current, readShared());
-      if (idle >= IDLE_LIMIT_MS) {
+      if (idle >= limit.current) {
         if (ending.current) return;
         ending.current = true;
         void fetch("/api/session/activity", { method: "DELETE" })
           .catch(() => {})
           .finally(() => signOut("/login?reason=idle"));
-      } else if (idle >= IDLE_LIMIT_MS - IDLE_WARNING_MS) {
+      } else if (idle >= limit.current - IDLE_WARNING_MS) {
         warning.current = true;
-        setSecondsLeft(Math.ceil((IDLE_LIMIT_MS - idle) / 1000));
+        setSecondsLeft(Math.ceil((limit.current - idle) / 1000));
       } else if (warning.current) {
         // Someone stayed active in another tab.
         warning.current = false;

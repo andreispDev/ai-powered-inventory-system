@@ -34,6 +34,7 @@ const ACTION_LABELS: Record<string, string> = {
   "item.file_added": "attached a file",
   "item.file_removed": "removed a file",
   "data.exported": "exported data",
+  "system.idle_changed": "changed the idle sign-out time",
   "user.created": "created an account",
   "user.updated": "edited an account",
   "user.email_changed": "changed an account's email",

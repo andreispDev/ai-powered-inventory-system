@@ -5,10 +5,10 @@ import { redirect } from "next/navigation";
 import { cache } from "react";
 import { effectivePermissions, type Permission, type Role } from "../authz/catalog";
 import { getAuthDb } from "../db/client";
-import { appUser, auditLog, office, officeBranding, permissionGrant, session, userAvatar } from "../db/schema";
+import { appUser, auditLog, office, officeBranding, permissionGrant, session, systemSetting, userAvatar } from "../db/schema";
 import { isConfigured } from "../env";
 import { getAuth } from "./config";
-import { isPastIdleLimit } from "./idle";
+import { DEFAULT_IDLE_MINUTES, isPastIdleLimit } from "./idle";
 import { isPastAbsoluteLimit } from "./sign-in-rules";
 
 export type Actor = {
@@ -23,6 +23,8 @@ export type Actor = {
   workspaceName: string | null;
   logoUrl: string | null;
   permissions: Permission[];
+  /** How long any account may sit idle, set by a Developer */
+  idleMinutes: number;
   preferences: Record<string, unknown> | null;
 };
 
@@ -47,7 +49,9 @@ export async function actorFromHeaders(requestHeaders: Headers): Promise<Actor |
 
   const db = getAuthDb();
   const [activity] = await db.select({ lastActiveAt: session.lastActiveAt }).from(session).where(eq(session.id, result.session.id));
-  if (!activity || isPastIdleLimit(activity.lastActiveAt)) {
+  const [setting] = await db.select({ idleMinutes: systemSetting.idleMinutes }).from(systemSetting);
+  const idleMinutes = setting?.idleMinutes ?? DEFAULT_IDLE_MINUTES;
+  if (!activity || isPastIdleLimit(activity.lastActiveAt, idleMinutes)) {
     await recordIdleSignOut(result.session.id, result.user.id);
     return null;
   }
@@ -89,6 +93,7 @@ export async function actorFromHeaders(requestHeaders: Headers): Promise<Actor |
     workspaceName: row.workspaceName,
     logoUrl: row.logoType && row.brandingAt ? `/api/images/logo/${user.officeId}?v=${row.brandingAt.getTime()}` : null,
     permissions: effectivePermissions(user.role, grants),
+    idleMinutes,
     preferences: user.preferences,
   };
 }

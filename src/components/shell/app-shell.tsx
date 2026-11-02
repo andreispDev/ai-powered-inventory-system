@@ -56,6 +56,7 @@ export type ShellUser = {
   officeName: string | null;
   workspaceName: string | null;
   logoUrl: string | null;
+  idleMinutes: number;
   permissions: Permission[];
   preferences: Record<string, unknown> | null;
 };
@@ -266,7 +267,7 @@ export function AppShell({ user, children }: { user: ShellUser; children: ReactN
     <RealtimeProvider>
     <SidebarProvider>
       <PreferenceSync saved={user.preferences as Appearance | null} />
-      <IdleGuard />
+      <IdleGuard minutes={user.idleMinutes} />
       <a
         href="#main"
         className="bg-background sr-only z-50 rounded-md border p-2 focus:not-sr-only focus:fixed focus:top-2 focus:left-2"

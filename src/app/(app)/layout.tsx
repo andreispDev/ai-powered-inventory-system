@@ -15,6 +15,7 @@ async function AuthenticatedShell({ children }: { children: ReactNode }) {
         officeName: actor.officeName,
         workspaceName: actor.workspaceName,
         logoUrl: actor.logoUrl,
+        idleMinutes: actor.idleMinutes,
         permissions: actor.permissions,
         preferences: actor.preferences,
       }}

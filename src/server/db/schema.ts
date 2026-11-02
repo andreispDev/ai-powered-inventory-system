@@ -78,6 +78,17 @@ export const appUser = pgTable(
   ],
 );
 
+/** Settings for the whole system, in a single row. */
+export const systemSetting = pgTable(
+  "system_setting",
+  {
+    id: integer("id").primaryKey().default(1),
+    idleMinutes: integer("idle_minutes").notNull().default(5),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [check("system_setting_one_row", sql`${t.id} = 1`), check("system_setting_idle_range", sql`${t.idleMinutes} between 1 and 480`)],
+);
+
 export const session = pgTable(
   "session",
   {

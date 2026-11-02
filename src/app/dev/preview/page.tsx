@@ -22,7 +22,7 @@ async function Preview({ searchParams }: { searchParams: Promise<{ role?: string
 
   return (
     <AppShell
-      user={{ name: `Sample ${role}`, email: `${role}@example.test`, image: null, role, officeName, workspaceName: null, logoUrl: null, permissions, preferences: null }}
+      user={{ name: `Sample ${role}`, email: `${role}@example.test`, image: null, role, officeName, workspaceName: null, logoUrl: null, idleMinutes: 5, permissions, preferences: null }}
     >
       <PageContainer>
         <PageHeader
