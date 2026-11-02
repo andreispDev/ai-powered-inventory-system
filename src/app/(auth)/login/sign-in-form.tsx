@@ -2,13 +2,16 @@
 
 import { KeyRound, Loader2, Mail } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState, useSyncExternalStore, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { requestSignInCode, signInWithCode } from "@/lib/auth-client";
 
 const RESEND_SECONDS = 60;
+
+const noSubscribe = () => () => {};
+const wasIdle = () => new URLSearchParams(window.location.search).get("reason") === "idle";
 
 export function SignInForm() {
   const router = useRouter();
@@ -18,6 +21,7 @@ export function SignInForm() {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [wait, setWait] = useState(0);
+  const idle = useSyncExternalStore(noSubscribe, wasIdle, () => false);
 
   useEffect(() => {
     if (wait <= 0) return;
@@ -69,6 +73,11 @@ export function SignInForm() {
   if (step === "email") {
     return (
       <form onSubmit={submitEmail} className="space-y-4">
+        {idle && (
+          <p role="status" className="rounded-lg bg-white/15 px-3 py-2 text-sm">
+            You were signed out after 5 minutes of inactivity.
+          </p>
+        )}
         <div className="space-y-2">
           <Label htmlFor="email">
             <Mail className="size-3.5" aria-hidden />

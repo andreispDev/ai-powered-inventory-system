@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import { OfflineBanner } from "@/components/connectivity/connectivity";
 import { CommandPalette } from "@/components/shell/command-palette";
+import { IdleGuard } from "@/components/shell/idle-guard";
 import { NotificationBell, UrgentBanner } from "@/components/shell/notifications";
 import { RealtimeProvider } from "@/components/providers/realtime-provider";
 import { Confirm } from "@/components/feedback/confirm";
@@ -257,6 +258,7 @@ export function AppShell({ user, children }: { user: ShellUser; children: ReactN
     <RealtimeProvider>
     <SidebarProvider>
       <PreferenceSync saved={user.preferences as Appearance | null} />
+      <IdleGuard />
       <a
         href="#main"
         className="bg-background sr-only z-50 rounded-md border p-2 focus:not-sr-only focus:fixed focus:top-2 focus:left-2"

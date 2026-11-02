@@ -5,9 +5,10 @@ import { redirect } from "next/navigation";
 import { cache } from "react";
 import { effectivePermissions, type Permission, type Role } from "../authz/catalog";
 import { getAuthDb } from "../db/client";
-import { appUser, office, officeBranding, permissionGrant, userAvatar } from "../db/schema";
+import { appUser, auditLog, office, officeBranding, permissionGrant, session, userAvatar } from "../db/schema";
 import { isConfigured } from "../env";
 import { getAuth } from "./config";
+import { isPastIdleLimit } from "./idle";
 import { isPastAbsoluteLimit } from "./sign-in-rules";
 
 export type Actor = {
@@ -28,6 +29,15 @@ export type Actor = {
 /** Loaded fresh on every request, so revoked access ends immediately. Memoized within one render. */
 export const getActor = cache(async (): Promise<Actor | null> => actorFromHeaders(await headers()));
 
+/** Ends a session for idleness, and puts that on the record. */
+export async function recordIdleSignOut(sessionId: string, userId: string) {
+  const db = getAuthDb();
+  const removed = await db.delete(session).where(eq(session.id, sessionId)).returning({ id: session.id });
+  if (removed.length === 0) return;
+  const [user] = await db.select({ role: appUser.role, officeId: appUser.officeId }).from(appUser).where(eq(appUser.id, userId));
+  await db.insert(auditLog).values({ actorId: userId, actorRole: user?.role, officeId: user?.officeId, action: "auth.idle_sign_out", entityType: "session" });
+}
+
 /** For long-lived connections, which must recheck the session as time passes. */
 export async function actorFromHeaders(requestHeaders: Headers): Promise<Actor | null> {
   if (!isConfigured()) return null;
@@ -36,6 +46,12 @@ export async function actorFromHeaders(requestHeaders: Headers): Promise<Actor |
   if (!result || isPastAbsoluteLimit(result.session.createdAt)) return null;
 
   const db = getAuthDb();
+  const [activity] = await db.select({ lastActiveAt: session.lastActiveAt }).from(session).where(eq(session.id, result.session.id));
+  if (!activity || isPastIdleLimit(activity.lastActiveAt)) {
+    await recordIdleSignOut(result.session.id, result.user.id);
+    return null;
+  }
+
   const [row] = await db
     .select({
       user: appUser,

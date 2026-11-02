@@ -8,13 +8,12 @@ export const requestSignInCode = (email: string) =>
 
 export const signInWithCode = (email: string, otp: string) => client.signIn.emailOtp({ email, otp });
 
-export const signOut = () =>
+export const signOut = (redirectTo = "/login") =>
   client.signOut({
     fetchOptions: {
       onSuccess: () => {
         // A full reload clears everything held for the signed-in user.
-        // eslint-disable-next-line @next/next/no-location-assign-relative-destination
-        window.location.href = "/login";
+        window.location.href = redirectTo;
       },
     },
   });

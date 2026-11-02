@@ -89,6 +89,8 @@ export const session = pgTable(
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
     ipAddress: text("ip_address"),
     userAgent: text("user_agent"),
+    /** When the browser last reported someone really using it */
+    lastActiveAt: timestamp("last_active_at", { withTimezone: true }).notNull().defaultNow(),
     ...timestamps,
   },
   (t) => [index("session_user_idx").on(t.userId)],
