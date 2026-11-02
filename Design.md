@@ -45,7 +45,7 @@ Numbers in tables and KPIs use `tabular-nums` and align right, so columns are ea
 - **Grid:** 4px base (Tailwind's default scale), so everything scales with `rem`.
 - **Radius:** `--radius: 0.5rem`: controls 0.375rem, cards 0.625rem.
 - **Small shadows:** three levels: `shadow-card` for cards, inputs and buttons, `shadow-raised` for hover and the login card, and `shadow-overlay` for dialogs. Dark mode uses stronger values so they still show.
-- **Faint gradients:** at most 5% of the theme color on the page background, sidebar, stat cards and empty states, and 12% behind the login card. Never behind body text at a level that changes its contrast.
+- **Faint gradients:** at most 5% of the theme color on the page background, sidebar, stat cards and empty states. Never behind body text at a level that changes its contrast.
 - **Control height:** 2.25rem default; 2rem in table toolbars. At Compact, this comes to about 32px, which meets the WCAG 2.2 minimum target size. Touch screens use a minimum of 2.75rem.
 
 ### Icons
@@ -422,7 +422,7 @@ The bell opens a popover with Unread and All, and a link to the full page. Urgen
 
 ### Login
 
-Centered card with the organization logo, an email field that leads to a 6-digit code step, and a line saying access is invitation-only. Rejected sign-ins get a clear message and who to contact, with no technical detail.
+A full-screen dusk photo of an office building, under a dark gradient and a faint dot pattern. Product text sits on the left and a frosted glass card with the email and code steps on the right. Phones show the name and card only. It looks the same in every theme, with fixed colors for contrast. Rejected sign-ins get a clear message and who to contact, with no technical detail.
 
 ---
 

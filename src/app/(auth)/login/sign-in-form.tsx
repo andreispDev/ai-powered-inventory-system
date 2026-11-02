@@ -70,7 +70,7 @@ export function SignInForm() {
     return (
       <form onSubmit={submitEmail} className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="email">Email</Label>
+          <Label htmlFor="email">Email address</Label>
           <Input
             id="email"
             type="email"
@@ -83,11 +83,11 @@ export function SignInForm() {
           />
         </div>
         {error && (
-          <p role="alert" className="border-destructive/30 bg-destructive/5 text-destructive rounded-lg border px-3 py-2 text-sm">
+          <p role="alert" className="rounded-lg border border-white/30 bg-black/30 px-3 py-2 text-sm text-white">
             {error}
           </p>
         )}
-        <Button type="submit" className="w-full" disabled={pending}>
+        <Button type="submit" size="lg" className="w-full" disabled={pending}>
           {pending && <Loader2 className="animate-spin" aria-hidden />}
           Email me a code
         </Button>
@@ -97,7 +97,7 @@ export function SignInForm() {
 
   return (
     <form onSubmit={submitCode} className="space-y-4">
-      <p className="text-muted-foreground text-sm">
+      <p className="text-sm opacity-90">
         If <span className="text-foreground font-medium break-all">{email}</span> has an account, a 6-digit code is on
         its way. It expires in 5 minutes.
       </p>
@@ -117,11 +117,11 @@ export function SignInForm() {
         />
       </div>
       {error && (
-        <p role="alert" className="border-destructive/30 bg-destructive/5 text-destructive rounded-lg border px-3 py-2 text-sm">
+        <p role="alert" className="rounded-lg border border-white/30 bg-black/30 px-3 py-2 text-sm text-white">
           {error}
         </p>
       )}
-      <Button type="submit" className="w-full" disabled={pending || code.length !== 6}>
+      <Button type="submit" size="lg" className="w-full" disabled={pending || code.length !== 6}>
         {pending && <Loader2 className="animate-spin" aria-hidden />}
         Sign in
       </Button>
