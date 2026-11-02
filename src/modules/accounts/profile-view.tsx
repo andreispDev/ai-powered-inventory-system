@@ -1,4 +1,4 @@
-import { ArrowLeftRight, Boxes, Building2, CalendarDays, CircleDot, FolderTree, History, KeyRound, type LucideIcon, Mail, Megaphone, PackageCheck, Shield, UserCheck, UserRound } from "lucide-react";
+import { ArrowLeftRight, Boxes, Building2, CalendarDays, CircleDot, FolderTree, History, KeyRound, type LucideIcon, Mail, Megaphone, MessageSquare, PackageCheck, Shield, UserCheck, UserRound } from "lucide-react";
 import { and, count, desc, eq, gte, isNull } from "drizzle-orm";
 import type { ReactNode } from "react";
 import { LocalTime } from "@/components/shell/local-time";
@@ -22,6 +22,7 @@ const ACTIVITY: { prefix: string; icon: LucideIcon; label: string }[] = [
   { prefix: "office.", icon: Building2, label: "Changed an office" },
   { prefix: "workspace.", icon: Building2, label: "Changed the workspace" },
   { prefix: "user.", icon: UserRound, label: "Changed an account" },
+  { prefix: "ai.", icon: MessageSquare, label: "Asked the assistant" },
 ];
 
 const describe = (action: string) => ACTIVITY.find((entry) => action.startsWith(entry.prefix)) ?? { icon: History, label: action };

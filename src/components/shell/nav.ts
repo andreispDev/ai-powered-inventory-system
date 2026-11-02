@@ -48,7 +48,7 @@ const NAV: NavGroup[] = [
     label: "Insights",
     items: [
       { label: "Predictions", icon: TrendingUp, href: "/predictions", permission: "ai.forecast.read" },
-      { label: "Assistant", icon: MessageSquare, permission: "ai.chat" },
+      { label: "Assistant", icon: MessageSquare, href: "/assistant", permission: "ai.chat" },
     ],
   },
   {

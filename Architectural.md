@@ -383,7 +383,7 @@ flowchart TB
 
 | Tool | Purpose |
 |---|---|
-| `search_items` | Hybrid retrieval: keyword (FTS) plus vector (pgvector), merged by reciprocal rank |
+| `search_items` | Keyword matching for now. Vector search (pgvector) merges in here by reciprocal rank once the extension is installed on the database |
 | `get_item` | One item, with custom fields |
 | `aggregate_inventory` | Counts and sums by whitelisted dimensions |
 | `list_movements` | Stock history by item, type, and date |

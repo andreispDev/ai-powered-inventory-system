@@ -43,6 +43,7 @@ import { FONTS, SCALES, type Appearance, type Font, type Mode, type Scale } from
 import { signOut } from "@/lib/auth-client";
 import { THEMES } from "@/lib/theme-tokens";
 import type { Permission, Role } from "@/server/authz/catalog";
+import { AssistantSheet } from "@/modules/assistant/assistant-sheet";
 import { PreferenceSync } from "@/modules/preferences/preference-sync";
 import { navFor } from "./nav";
 
@@ -268,6 +269,7 @@ export function AppShell({ user, children }: { user: ShellUser; children: ReactN
           <SidebarTrigger aria-label="Toggle sidebar" />
           <div className="ml-auto flex items-center gap-1">
             <CommandPalette permissions={user.permissions} />
+            {user.permissions.includes("ai.chat") && <AssistantSheet />}
             <NotificationBell />
             <AppearanceMenu />
             <UserMenu user={user} />

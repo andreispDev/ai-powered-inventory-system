@@ -335,6 +335,44 @@ export const forecast = pgTable(
   ],
 );
 
+/** A person's assistant chats. Private to them: oversight goes through the audit log. */
+export const aiConversation = pgTable(
+  "ai_conversation",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => appUser.id),
+    officeId: uuid("office_id").references(() => office.id),
+    title: text("title").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("ai_conversation_user_idx").on(t.userId, t.updatedAt.desc())],
+);
+
+export const aiMessage = pgTable(
+  "ai_message",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    conversationId: uuid("conversation_id")
+      .notNull()
+      .references(() => aiConversation.id),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => appUser.id),
+    officeId: uuid("office_id").references(() => office.id),
+    role: text("role").notNull(),
+    content: text("content").notNull(),
+    sources: jsonb("sources").$type<{ label: string; href: string }[]>(),
+    promptTokens: integer("prompt_tokens"),
+    completionTokens: integer("completion_tokens"),
+    durationMs: integer("duration_ms"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("ai_message_conversation_idx").on(t.conversationId, t.createdAt), index("ai_message_user_idx").on(t.userId, t.createdAt.desc())],
+);
+
 export const transferStatusEnum = pgEnum("transfer_status", ["pending", "accepted", "rejected", "cancelled"]);
 
 export const assignment = pgTable(

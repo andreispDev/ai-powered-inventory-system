@@ -21,6 +21,7 @@ const LABELS: Record<string, string> = {
   transfers: "Transfers",
   assignments: "Assignments",
   predictions: "Predictions",
+  assistant: "Assistant",
   accounts: "Accounts",
   offices: "Offices",
   permissions: "Permissions",

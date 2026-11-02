@@ -51,6 +51,7 @@ const ACTION_LABELS: Record<string, string> = {
   "permission.request_approved": "approved an access request",
   "permission.request_rejected": "declined an access request",
   "notification.acknowledged": "acknowledged an announcement",
+  "ai.asked": "asked the assistant",
 };
 
 async function Content() {
