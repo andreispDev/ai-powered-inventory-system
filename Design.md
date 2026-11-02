@@ -421,7 +421,7 @@ The bell opens a popover with Unread and All, and a link to the full page. Urgen
 
 ### Login
 
-Centered card with the organization logo, one "Continue with Google" button, and a line saying access is invitation-only. Rejected sign-ins get a clear message and who to contact, with no technical detail.
+Centered card with the organization logo, an email field that leads to a 6-digit code step, and a line saying access is invitation-only. Rejected sign-ins get a clear message and who to contact, with no technical detail.
 
 ---
 

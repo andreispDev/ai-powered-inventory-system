@@ -37,7 +37,7 @@ A private inventory platform for one organization. Each office manages its own i
 ### Non-goals for v1
 
 - Selling this to other organizations (no billing, no sign-up page, one deployment per organization)
-- Login by password, or any provider other than Google
+- Login by password, or a "Continue with Google" button (it would need Google Cloud Console, which is not used)
 - Offline editing (reads stay visible during an outage; writes wait until the connection returns)
 - Native mobile apps (the web app is responsive)
 - Purchasing, invoicing, accounting, or barcode hardware integration
@@ -51,12 +51,12 @@ The build proceeds on these unless changed. The first three would change the arc
 
 | # | Assumption | If wrong |
 |---|---|---|
-| A1 | **"Isolated" means private to one organization, not air-gapped.** Google login needs internet access. AI runs on Ollama on our own machine, so inventory data isn't sent to an outside AI service. | An air-gapped requirement means replacing Google login with a self-hosted sign-in |
+| A1 | **"Isolated" means private to one organization, not air-gapped.** Sign-in codes are sent by email, which needs internet access. AI runs on Ollama on our own machine, so inventory data isn't sent to an outside AI service. | An air-gapped requirement means replacing emailed codes with a self-hosted mail server or another sign-in method |
 | A2 | **Each user belongs to exactly one office.** | Multi-office users need a membership table and an office switcher |
 | A3 | **Developers can see all offices but do not edit office inventory.** They are read-only on inventory, and every view of office data is logged. | Giving developers write access is a small permission change, but it weakens the audit story |
 | A4 | Scale target: 50 offices, 2,000 accounts, 1 million items, 500 concurrent users | The design scales further, but infrastructure sizing changes |
 | A5 | Audit logs are kept 2 years online and 7 years in archive | Legal or policy retention rules may require different numbers |
-| A6 | Accounts can be personal Gmail or Google Workspace addresses | If everyone is on one Workspace domain, we also restrict login to that domain, which is stronger |
+| A6 | Accounts use Gmail or other email addresses, and codes are sent through one Gmail account | A full rollout may exceed Gmail's daily sending limit and need an email service |
 
 ---
 
@@ -102,9 +102,9 @@ Priority: **P0** is required for launch, **P1** follows soon after launch, **P2*
 
 | ID | Requirement | Priority |
 |---|---|---|
-| AUTH-1 | Sign-in is by Google only, and there is no password anywhere | P0 |
-| AUTH-2 | Invite-only: a Google account can sign in only if its verified email was provisioned first. Others see a clear "ask your administrator" page, and the attempt is logged | P0 |
-| AUTH-3 | The first sign-in binds the account to Google's permanent user ID, so a changed or reassigned email cannot take over an account | P0 |
+| AUTH-1 | Sign-in is by a one-time code sent to the person's email (Gmail in normal use), and there is no password anywhere | P0 |
+| AUTH-2 | Invite-only: an email can sign in only if it was provisioned first. Unknown emails get the same on-screen response and no email, so the form doesn't reveal who has an account. Sign-in attempts are logged | P0 |
+| AUTH-3 | Codes have 6 digits, expire in 5 minutes, are stored hashed, and stop working after 3 wrong tries. An email can request 5 codes per 15 minutes | P0 |
 | AUTH-4 | Deactivating an account ends its sessions immediately | P0 |
 | AUTH-5 | Sessions end after 8 hours of inactivity or 7 days in total, and users can see and revoke their own sessions | P0 |
 | AUTH-6 | Developers must have signed in within the last 15 minutes to perform sensitive actions (permission changes, office deletion, global announcements) | P1 |
@@ -299,7 +299,7 @@ Full specification in [Design.md](Design.md).
 
 ## 6. Key user journeys
 
-**A. Office setup.** A Developer creates an office and its admin account → the admin signs in with Google → the admin creates user accounts → users sign in and start with an empty state that guides them to create a category.
+**A. Office setup.** A Developer creates an office and its admin account → the admin signs in with an emailed code → the admin creates user accounts → users sign in and start with an empty state that guides them to create a category.
 
 **B. Permission grant.** An admin asks to control item deletion → the Developer sees the request, approves it with an expiry date → the admin gets the feature on their next page load, with a notification → grant and use are both logged.
 
@@ -319,7 +319,7 @@ Full specification in [Design.md](Design.md).
 
 | Phase | Scope | Exit criteria |
 |---|---|---|
-| **0. Foundation** | Project setup, database, Google sign-in, office separation, permission engine, audit logging, app shell, themes, scaling, CI | Isolation test suite passes; security-header spike resolved |
+| **0. Foundation** | Project setup, database, email code sign-in, office separation, permission engine, audit logging, app shell, themes, scaling, CI | Isolation test suite passes; security-header spike resolved |
 | **1. Core inventory** | Offices, accounts, categories, items, stock movements, tables, dashboards, profiles, rate limiting, offline state | A pilot office can do real work |
 | **2. Operations** | Worker, assignments, transfers, notifications, announcements, real-time monitoring, log viewer, health view | Journeys A–D and G pass end to end |
 | **3. Intelligence** | Forecasts, embeddings, AI assistant, AI usage controls and evaluations | Journeys E and F pass; AI quality targets met |
@@ -334,6 +334,7 @@ Full specification in [Design.md](Design.md).
 |---|---|---|
 | Data leaks between offices | Severe | Database-level enforcement, automated isolation tests that block merges, scoped cache keys |
 | Inventory text manipulates the AI (prompt injection) | High | Read-only tools, scope taken from the session and never from the model, no links or images from model output to outside sites, red-team evaluation cases |
+| Someone gets into a person's email and can sign in as them | High | 2-Step Verification on email accounts, instant deactivation, sign-in logs, short sessions |
 | Developer accounts hold broad access | High | Recent sign-in for sensitive actions, read-only inventory, full logging, a small number of accounts |
 | Forecasts are wrong or trusted too much | Medium | Confidence, "not enough history", backtesting, advisory only |
 | Local AI is slow when several people use it | High | Queue with visible position, per-user limits, the rest of the app unaffected, a stronger machine before wider rollout |

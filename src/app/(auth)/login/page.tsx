@@ -1,7 +1,7 @@
 import { Boxes } from "lucide-react";
 import type { Metadata } from "next";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { GoogleButton } from "./google-button";
+import { SignInForm } from "./sign-in-form";
 
 export const metadata: Metadata = { title: "Sign in" };
 
@@ -16,7 +16,7 @@ export default function LoginPage() {
         <CardDescription>Access is by invitation only.</CardDescription>
       </CardHeader>
       <CardContent>
-        <GoogleButton />
+        <SignInForm />
       </CardContent>
     </Card>
   );

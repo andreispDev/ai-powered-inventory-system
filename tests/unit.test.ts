@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canLinkGoogle, canStartSession, isPastAbsoluteLimit } from "@/server/auth/sign-in-rules";
+import { canStartSession, isPastAbsoluteLimit } from "@/server/auth/sign-in-rules";
 import { effectivePermissions, isAllowed, type Grant } from "@/server/authz/catalog";
 import { contrast, themeTokens, THEMES, type Oklch } from "@/lib/theme-tokens";
 
@@ -63,12 +63,6 @@ describe("sign-in rules", () => {
     expect(canStartSession({ emailVerified: true, status: "deactivated" })).toBe(false);
     expect(canStartSession({ emailVerified: true, status: "invited" })).toBe(true);
     expect(canStartSession({ emailVerified: true, status: "active" })).toBe(true);
-  });
-
-  it("keeps an account on its first Google identity", () => {
-    expect(canLinkGoogle(undefined, "sub-1")).toBe(true);
-    expect(canLinkGoogle("sub-1", "sub-1")).toBe(true);
-    expect(canLinkGoogle("sub-1", "sub-2")).toBe(false);
   });
 
   it("ends sessions 7 days after sign-in", () => {

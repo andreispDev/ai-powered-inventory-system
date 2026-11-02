@@ -70,7 +70,7 @@ src/app/
 ├─ (auth)/                            Centered layout, no shell
 │  ├─ layout.tsx
 │  ├─ login/page.tsx
-│  └─ access-denied/page.tsx          Google account isn't provisioned
+│  └─ access-denied/page.tsx          Sign-in was refused
 │
 ├─ (app)/                             Sidebar + navbar shell
 │  ├─ layout.tsx                      Static frame; user data streams in
@@ -229,7 +229,9 @@ src/server/
 │  ├─ scope.ts           withScope(): transaction + SET LOCAL
 │  └─ schema/            Drizzle tables, one file per domain
 ├─ auth/
-│  ├─ config.ts          Better Auth + Google + provisioning hook
+│  ├─ build.ts           Better Auth, email codes and sign-in rules
+│  ├─ config.ts          Connects build.ts to the database and mailer
+│  ├─ mailer.ts          Sends codes through Gmail SMTP
 │  └─ session.ts         getSession(), requireSession(), requirePermission()
 ├─ authz/
 │  ├─ catalog.ts         Typed permission catalog
@@ -332,8 +334,7 @@ Validated by `server/env.ts` at boot, so a bad deploy fails immediately. `.env.e
 | `DATABASE_URL`, `DATABASE_AUTH_URL` | Restricted app role, and the sign-in role that reads accounts before a scope exists. `db:setup` generates both |
 | `REDIS_URL` | Limits, queues, event streams, cache |
 | `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` | Sessions |
-| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Sign-in |
-| `GOOGLE_ALLOWED_HD` | Optional Workspace domain restriction |
+| `SMTP_USER`, `SMTP_APP_PASSWORD` | Gmail account that sends sign-in codes. Required in production |
 | `BOOTSTRAP_DEVELOPER_EMAIL` | First Developer (used by the CLI only) |
 | `OLLAMA_URL`, `AI_MODEL`, `EMBEDDING_MODEL` | Local AI: `http://127.0.0.1:11434`, `llama3.2:3b`, `nomic-embed-text` |
 | `S3_ENDPOINT`, `S3_BUCKET`, `S3_ACCESS_KEY`, `S3_SECRET_KEY` | Files |

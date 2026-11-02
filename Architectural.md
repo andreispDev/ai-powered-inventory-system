@@ -31,7 +31,7 @@ flowchart TB
   WK[Worker process<br/>BullMQ] --> PG
   WK --> R
   WK --> S3
-  W1 & W2 --> G[Google OAuth]
+  W1 & W2 --> G[Gmail SMTP<br/>sign-in codes]
   W1 & W2 --> O[Ollama on our machine<br/>chat and embeddings]
   WK --> O
 ```
@@ -44,7 +44,7 @@ flowchart TB
 | Language | TypeScript strict | One language across web, worker and shared validation |
 | Database | PostgreSQL 16+ | RLS, JSONB, full-text search, partitioning, pgvector, all in one system |
 | ORM | Drizzle | Stays close to SQL, which RLS, `SET LOCAL`, partitions and custom indexes need |
-| Auth | Better Auth (Google provider, database sessions) | Self-hosted, with server-side sessions that can be revoked instantly |
+| Auth | Better Auth (email one-time codes, database sessions), Nodemailer with Gmail SMTP | Self-hosted, needs no Google Cloud Console, and server-side sessions can be revoked instantly |
 | Queue and scheduler | BullMQ on Redis | Retries, delays, cron-style jobs and failure queues |
 | Real-time | Server-Sent Events + Redis Streams | Traffic is server-to-client only, and SSE works through ordinary proxies, with built-in reconnection. Streams keep recent events, so reconnecting clients can catch up |
 | LLM | Local Ollama with `llama3.2:3b`, behind an `LlmClient` interface | Already running on the current PC, and data stays on our machine. The model is set by config, so a larger one can replace it |
@@ -106,21 +106,19 @@ export const updateItem = guard({
 
 ```mermaid
 flowchart LR
-  A[Continue with Google] --> B{Google OK and<br/>email verified?}
-  B -- No --> X[Denied, logged]
-  B -- Yes --> C{Provisioned<br/>account?}
-  C -- No --> X
-  C -- Deactivated --> X
-  C -- Invited --> D[Bind Google sub, set active]
-  C -- Active --> E{sub matches?}
-  E -- No --> X
-  E -- Yes --> F[Create DB session]
-  D --> F
+  A[Enter email] --> B{Provisioned and<br/>not deactivated?}
+  B -- No --> S[Same on-screen response,<br/>no email sent]
+  B -- Yes --> C[Email a 6-digit code]
+  C --> D{Right code within<br/>5 min and 3 tries?}
+  D -- No --> X[Denied, logged]
+  D -- Yes --> F[Create DB session,<br/>invited becomes active]
 ```
 
-- Uses OAuth with PKCE and state, requesting only the `openid email profile` scopes. The hook in the sign-in step denies by default.
-- Identity is Google's `sub`, not the email. Emails can change hands; `sub` doesn't.
-- Personal Gmail has no domain to restrict, so **provisioning is the access control**. If everyone is on Workspace, we also verify the `hd` claim (PRD A6).
+- Codes are one-time, stored hashed, expire in 5 minutes, and lock after 3 wrong tries.
+- **Provisioning is the access control.** Sign-in can never create an account, and only the `sign-in` code type is allowed.
+- Requests are limited per IP and per email (5 per 15 minutes), counted per server process until the Phase 1 limiter moves this to Redis.
+- Every attempt is logged. Whoever controls an inbox can sign in as that account, so email accounts should use 2-Step Verification.
+- Codes are sent through one Gmail account with an App Password. Without those settings in development, codes print in the server terminal. Production refuses to start without them.
 - Sessions are database rows, referenced by an opaque cookie that is `HttpOnly`, `Secure` and `SameSite=Lax`. Deactivating a user deletes their rows, which takes effect on the next request.
 - Session lookup can use a short (30 s) Redis cache, invalidated on revocation.
 
@@ -226,7 +224,7 @@ erDiagram
 | Table | Key columns | Notes |
 |---|---|---|
 | `office` | `code`, `name`, profile fields, `status` | |
-| `app_user` | `office_id` (null for Developers), `role`, `email`, `google_sub`, `status`, `preferences` JSONB | Theme and scale sync across devices |
+| `app_user` | `office_id` (null for Developers), `role`, `email`, `status`, `preferences` JSONB | Theme and scale sync across devices |
 | `session` | `user_id`, `token_hash`, `expires_at`, `last_seen_at`, `ip`, `user_agent` | |
 | `permission_grant` | `subject_type`, `subject_id`, `permission`, `effect`, `reason`, `expires_at`, `granted_by` | |
 | `permission_request` | `requester_id`, `permission`, `justification`, `status`, `decided_by` | P1 |
@@ -507,7 +505,7 @@ What keeps this path open:
 | Unit | Vitest | Permission resolution, field schema builder, forecasting |
 | Integration | Vitest + Testcontainers | RLS, ledger, outbox, idempotency, on real Postgres and Redis |
 | Isolation | Vitest + Playwright | Every office table and route, blocking merges |
-| End to end | Playwright | PRD journeys per role, with mocked Google sign-in in test only |
+| End to end | Playwright | PRD journeys per role, with codes captured in test only |
 | Accessibility | axe + Playwright | Key screens across themes and scales |
 | Load | k6 | Performance at PRD A4 scale |
 | AI | Eval set | Accuracy, citations, injection resistance |
@@ -531,6 +529,7 @@ CI runs lint → type check → unit → integration → isolation → build →
 | 9 | Database sessions | JWT | Revocation is immediate |
 | 10 | Our own machine | Vercel | Long-running worker, SSE and Ollama, plus data control |
 | 11 | Outbox | Publish in the request | No lost or phantom events |
+| 13 | Emailed codes | Google OAuth | Product owner doesn't want Google Cloud Console |
 | 12 | Local Ollama | Claude API, Voyage | Product owner's choice. Data stays on our machine with no per-use fee, in exchange for lower speed and accuracy on current hardware |
 
 ---
@@ -542,4 +541,4 @@ CI runs lint → type check → unit → integration → isolation → build →
 | Ollama | Running, version 0.40.13, both models installed | Nothing |
 | PostgreSQL + pgAdmin 4 | In use per product owner; version not checked | Create the database, confirm version 16+, and install the `pgvector` extension |
 | Redis | Not checked | Run it through Docker or WSL, as Redis has no official native Windows build |
-| Google sign-in | Not set up | Create OAuth credentials with a `localhost` redirect. Other machines will need a real HTTPS address |
+| Sign-in email | Not set up | Add a Gmail App Password to send real codes. Until then, codes print in the server terminal |

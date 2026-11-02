@@ -1,9 +1,12 @@
 import { createAuthClient } from "better-auth/react";
+import { emailOTPClient } from "better-auth/client/plugins";
 
-const client = createAuthClient();
+const client = createAuthClient({ plugins: [emailOTPClient()] });
 
-export const signInWithGoogle = () =>
-  client.signIn.social({ provider: "google", callbackURL: "/dashboard", errorCallbackURL: "/access-denied" });
+export const requestSignInCode = (email: string) =>
+  client.emailOtp.sendVerificationOtp({ email, type: "sign-in" });
+
+export const signInWithCode = (email: string, otp: string) => client.signIn.emailOtp({ email, otp });
 
 export const signOut = () =>
   client.signOut({

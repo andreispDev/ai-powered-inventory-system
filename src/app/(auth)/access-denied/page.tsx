@@ -11,9 +11,9 @@ export default function AccessDeniedPage() {
     <Card className="w-full max-w-sm text-center">
       <CardHeader>
         <ShieldX className="text-destructive mx-auto mb-2 size-8" aria-hidden />
-        <CardTitle className="text-xl">You can&apos;t sign in with this account</CardTitle>
+        <CardTitle className="text-xl">You can&apos;t sign in right now</CardTitle>
         <CardDescription>
-          This Google account doesn&apos;t have access. Ask your administrator to create your account, then try again.
+          Your session has ended or your account doesn&apos;t have access. If this keeps happening, ask your administrator.
         </CardDescription>
       </CardHeader>
       <CardContent>

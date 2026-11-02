@@ -45,7 +45,7 @@ export const appUser = pgTable(
     email: text("email").notNull().unique(),
     emailVerified: boolean("email_verified").notNull().default(false),
     image: text("image"),
-    role: roleEnum("role").notNull(),
+    role: roleEnum("role").notNull().default("user"),
     officeId: uuid("office_id").references(() => office.id),
     status: userStatusEnum("status").notNull().default("invited"),
     ...timestamps,
@@ -82,7 +82,6 @@ export const account = pgTable(
     userId: uuid("user_id")
       .notNull()
       .references(() => appUser.id, { onDelete: "cascade" }),
-    /** Google's permanent user ID (sub) */
     accountId: text("account_id").notNull(),
     providerId: text("provider_id").notNull(),
     accessToken: text("access_token"),
@@ -96,7 +95,6 @@ export const account = pgTable(
   },
   (t) => [
     uniqueIndex("account_provider_idx").on(t.providerId, t.accountId),
-    // One Google identity per person, so a reassigned email can't add a second one.
     uniqueIndex("account_user_provider_idx").on(t.userId, t.providerId),
   ],
 );
