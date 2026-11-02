@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { backtest, forecastItem, holt, keepsTheNumbers, startOfWeek, tsb, type ForecastInput } from "@/modules/forecast/engine";
+import { crumbsFor } from "@/components/shell/breadcrumbs";
 import { canStartSession, isPastAbsoluteLimit } from "@/server/auth/sign-in-rules";
 import { effectivePermissions, isAllowed, type Grant } from "@/server/authz/catalog";
 import { contrast, themeTokens, THEMES, type Oklch } from "@/lib/theme-tokens";
@@ -181,5 +182,19 @@ describe("stock forecasts", () => {
     expect(keepsTheNumbers(note, "With 25 left at about 5 a week, this runs out near 2 Dec 2026.")).toBe(false);
     expect(keepsTheNumbers(note, "This runs out soon.")).toBe(false);
     expect(keepsTheNumbers(note, "")).toBe(false);
+  });
+});
+
+describe("breadcrumbs", () => {
+  const trail = (path: string) => crumbsFor(path).map((crumb) => crumb.label);
+
+  it("starts every trail at the dashboard", () => {
+    expect(trail("/dashboard")).toEqual(["Dashboard"]);
+    expect(trail("/inventory")).toEqual(["Dashboard", "Inventory"]);
+    expect(trail("/inventory/00000000-0000-4000-8000-000000000001/edit")).toEqual(["Dashboard", "Inventory", "Details", "Edit"]);
+  });
+
+  it("skips the console grouping, which has no page", () => {
+    expect(crumbsFor("/console/offices").map((crumb) => crumb.href)).toEqual(["/dashboard", "/console/offices"]);
   });
 });

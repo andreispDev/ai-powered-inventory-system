@@ -38,15 +38,15 @@ const isId = (segment: string) => /^[0-9a-f-]{36}$/.test(segment);
 
 export function crumbsFor(pathname: string) {
   const segments = pathname.split("/").filter(Boolean);
-  return (
-    segments
-      .map((segment, index) => ({
-        label: isId(segment) ? "Details" : LABELS[segment],
-        href: `/${segments.slice(0, index + 1).join("/")}`,
-      }))
-      // "console" only groups Developer pages, and has no page of its own.
-      .filter((crumb) => crumb.label)
-  );
+  const crumbs = segments
+    .map((segment, index) => ({
+      label: isId(segment) ? "Details" : LABELS[segment],
+      href: `/${segments.slice(0, index + 1).join("/")}`,
+    }))
+    // "console" only groups Developer pages, and has no page of its own.
+    .filter((crumb) => crumb.label);
+  // Every trail starts at the dashboard.
+  return segments[0] === "dashboard" ? crumbs : [{ label: LABELS.dashboard, href: "/dashboard" }, ...crumbs];
 }
 
 export function Breadcrumbs() {
