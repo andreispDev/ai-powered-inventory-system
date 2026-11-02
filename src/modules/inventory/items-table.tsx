@@ -46,6 +46,7 @@ export function ItemsTable({
   hideLocation = false,
   canEdit = false,
   canDelete = false,
+  records = false,
 }: {
   rows: ItemRow[];
   fields: readonly FieldDef[];
@@ -55,7 +56,9 @@ export function ItemsTable({
   hideLocation?: boolean;
   canEdit?: boolean;
   canDelete?: boolean;
+  records?: boolean;
 }) {
+  const base = records ? "/records" : "/inventory";
   const { params, set, pending } = useUrlState();
   const [hidden, setHidden] = useState<string[]>([]);
 
@@ -85,12 +88,12 @@ export function ItemsTable({
       label: "Name",
       sort: "name",
       render: (row) => (
-        <Link href={`/inventory/${row.id}`} className="font-medium hover:underline">
+        <Link href={`${base}/${row.id}`} className="font-medium hover:underline">
           {row.name}
         </Link>
       ),
     },
-    { id: "sku", label: "SKU", sort: "sku", render: (row) => <span className="font-mono text-xs">{row.sku ?? "—"}</span> },
+    { id: "sku", label: records ? "Reference" : "SKU", sort: "sku", render: (row) => <span className="font-mono text-xs">{row.sku ?? "—"}</span> },
     { id: "category", label: "Category", render: (row) => row.categoryName },
     ...(showOffice ? [{ id: "office", label: "Office", render: (row: ItemRow) => row.officeName }] : []),
     {
@@ -125,7 +128,8 @@ export function ItemsTable({
     ),
   ];
 
-  const visible = columns.filter((column) => !hidden.includes(column.id));
+  const shown = records ? columns.filter((column) => column.id !== "quantity" && column.id !== "status") : columns;
+  const visible = shown.filter((column) => !hidden.includes(column.id));
   const sort = params.get("sort") ?? "name";
   const direction = params.get("dir") === "desc" ? "desc" : "asc";
 
@@ -140,7 +144,7 @@ export function ItemsTable({
             </Button>
           </PopoverTrigger>
           <PopoverContent align="end" className="max-h-80 w-56 space-y-2 overflow-y-auto">
-            {columns.map((column) => (
+            {shown.map((column) => (
               <label key={column.id} className="flex items-center gap-2 text-sm">
                 <Checkbox
                   checked={!hidden.includes(column.id)}
@@ -193,9 +197,9 @@ export function ItemsTable({
                 ))}
                 <TableCell>
                   <RowActions>
-                    <RowLink href={`/inventory/${row.id}`} icon={Eye} label="View" />
-                    {canEdit && <RowLink href={`/inventory/${row.id}/edit`} icon={Pencil} label="Edit" />}
-                    {canDelete && <DeleteItemButton id={row.id} name={row.name} size="sm" />}
+                    <RowLink href={`${base}/${row.id}`} icon={Eye} label="View" />
+                    {canEdit && <RowLink href={`${base}/${row.id}/edit`} icon={Pencil} label="Edit" />}
+                    {canDelete && <DeleteItemButton id={row.id} name={row.name} size="sm" records={records} />}
                   </RowActions>
                 </TableCell>
               </TableRow>

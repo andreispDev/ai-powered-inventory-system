@@ -39,7 +39,7 @@ async function Content({ params }: Props) {
         actions={
           <>
             <Button variant="outline" asChild>
-              <Link href={`/inventory?category=${data.row.id}`}>View items</Link>
+              <Link href={`/${data.row.kind === "records" ? "records" : "inventory"}?category=${data.row.id}`}>{data.row.kind === "records" ? "View records" : "View items"}</Link>
             </Button>
             {actor.permissions.includes("category.archive") && <CategoryArchiveButton id={data.row.id} archived={archived} />}
           </>
@@ -48,6 +48,7 @@ async function Content({ params }: Props) {
       <StandardFields
         categoryId={data.row.id}
         disabled={data.row.disabledFields}
+        records={data.row.kind === "records"}
         canEdit={actor.permissions.includes("category.update") && !archived}
       />
       <ColumnBuilder

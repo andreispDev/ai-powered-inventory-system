@@ -2,6 +2,7 @@
 import { and, asc, count, desc, eq, gte, ilike, isNull, or, sql, sum, type SQL } from "drizzle-orm";
 import { z } from "zod";
 import type { Permission } from "../../server/authz/catalog";
+import { itemPath } from "../inventory/kinds";
 import { appUser, assignment, category, categoryField, forecast, item, office, stockMovement } from "../../server/db/schema";
 import type { ScopedTx } from "../../server/db/scope";
 
@@ -52,6 +53,7 @@ const itemRows = (tx: ScopedTx, where: SQL | undefined, limit = MAX_ROWS) =>
       id: item.id,
       name: item.name,
       sku: item.sku,
+      kind: category.kind,
       category: category.name,
       office: office.name,
       status: item.status,
@@ -66,17 +68,23 @@ const itemRows = (tx: ScopedTx, where: SQL | undefined, limit = MAX_ROWS) =>
     .orderBy(asc(item.name))
     .limit(limit);
 
-const itemSource = (row: { id: string; name: string }): Source => ({ label: row.name, href: `/inventory/${row.id}` });
+const itemSource = (row: { id: string; name: string; kind?: "stock" | "records" }): Source => ({ label: row.name, href: itemPath(row.kind ?? "stock", row.id) });
 const withoutId = <T extends { id: string }>(row: T): Omit<T, "id"> => {
   const { id, ...rest } = row;
   void id;
   return rest;
 };
 
+/** A record's zero quantity means nothing, and would read as "out of stock". */
+const describeItem = <T extends { id: string; kind: "stock" | "records"; quantity: number; unit: string; status: string }>(row: T) => {
+  const { kind, quantity, unit, status, ...rest } = withoutId(row) as Omit<T, "id">;
+  return kind === "records" ? { ...rest, type: "record" } : { ...rest, status, quantity, unit };
+};
+
 export const TOOLS: Tool[] = [
   define({
     name: "search_items",
-    description: "Find items by words in their name, SKU, notes, supplier, location or category.",
+    description: "Find stock items and records (such as work papers) by words in their name, reference, notes, supplier, location or category.",
     permission: "item.read",
     input: z.object({ query: z.string().trim().min(1).max(200) }),
     async run({ tx }, { query }) {
@@ -85,7 +93,7 @@ export const TOOLS: Tool[] = [
       // Records matching every word first. Failing that, any word, and the model is told they're only close.
       const rows = exact.length > 0 || !where ? exact : await itemRows(tx, matches(query, false));
       return {
-        data: { found: rows.length, closeMatchesOnly: exact.length === 0 && rows.length > 0, items: rows.map(withoutId) },
+        data: { found: rows.length, closeMatchesOnly: exact.length === 0 && rows.length > 0, items: rows.map(describeItem) },
         sources: rows.map(itemSource),
         empty: rows.length === 0,
       };
@@ -111,7 +119,7 @@ export const TOOLS: Tool[] = [
         })
         .from(item)
         .where(eq(item.id, match.id));
-      return { data: { found: true, ...withoutId(match), ...extra }, sources: [itemSource(match)] };
+      return { data: { found: true, ...describeItem(match), ...extra }, sources: [itemSource(match)] };
     },
   }),
   define({
@@ -130,7 +138,7 @@ export const TOOLS: Tool[] = [
         .from(item)
         .innerJoin(category, eq(item.categoryId, category.id))
         .innerJoin(office, eq(item.officeId, office.id))
-        .where(and(isNull(item.deletedAt), search ? (matches(search) ?? sql`false`) : undefined, out_of_stock_only ? eq(item.quantity, 0) : undefined))
+        .where(and(isNull(item.deletedAt), eq(category.kind, "stock"), search ? (matches(search) ?? sql`false`) : undefined, out_of_stock_only ? eq(item.quantity, 0) : undefined))
         .groupBy(...(group_by ? [dimension] : []))
         .orderBy(desc(count()))
         .limit(20);

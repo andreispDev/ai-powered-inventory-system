@@ -52,6 +52,7 @@ async function Content() {
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
+                <TableHead>Type</TableHead>
                 <TableHead>Inside</TableHead>
                 {showOffice && <TableHead>Office</TableHead>}
                 <TableHead className="text-right">Columns</TableHead>
@@ -68,6 +69,7 @@ async function Content() {
                       {row.name}
                     </Link>
                   </TableCell>
+                  <TableCell>{row.kind === "records" ? "Records" : "Stock"}</TableCell>
                   <TableCell>{row.parentId ? nameOf.get(row.parentId) : "—"}</TableCell>
                   {showOffice && <TableCell>{row.officeName}</TableCell>}
                   <TableCell className="text-right tabular-nums">{row.fields}</TableCell>
@@ -78,7 +80,7 @@ async function Content() {
                   <TableCell>
                     <RowActions>
                       <RowLink href={`/categories/${row.id}`} icon={Eye} label="View" />
-                      <RowLink href={`/inventory?category=${row.id}`} icon={Boxes} label="Items" />
+                      <RowLink href={`/${row.kind === "records" ? "records" : "inventory"}?category=${row.id}`} icon={Boxes} label={row.kind === "records" ? "Records" : "Items"} />
                       {actor.permissions.includes("category.archive") && <CategoryArchiveButton id={row.id} archived={!!row.archivedAt} size="sm" />}
                     </RowActions>
                   </TableCell>

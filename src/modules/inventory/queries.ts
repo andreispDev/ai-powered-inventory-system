@@ -2,6 +2,7 @@ import "server-only";
 import { and, asc, count, desc, eq, ilike, isNotNull, isNull, or, sql, type SQL } from "drizzle-orm";
 import { isNumeric, type FieldDef } from "@/modules/categories/field-schema";
 import { appUser, category, item, office, stockMovement } from "@/server/db/schema";
+import { itemIsKind, type CategoryKind } from "./kinds";
 import type { ScopedTx } from "@/server/db/scope";
 
 export const SORTABLE = {
@@ -14,6 +15,8 @@ export const SORTABLE = {
 } as const;
 
 export type ItemFilters = {
+  /** Inventory lists only stock, and the Records page only records */
+  kind?: CategoryKind;
   q?: string;
   categoryId?: string;
   status?: string;
@@ -30,7 +33,7 @@ export type ItemFilters = {
 const escapeLike = (text: string) => text.replace(/[\\%_]/g, "\\$&");
 
 export async function listItems(tx: ScopedTx, filters: ItemFilters) {
-  const conditions: (SQL | undefined)[] = [filters.deleted ? isNotNull(item.deletedAt) : isNull(item.deletedAt)];
+  const conditions: (SQL | undefined)[] = [filters.deleted ? isNotNull(item.deletedAt) : isNull(item.deletedAt), itemIsKind(filters.kind ?? "stock")];
   const fields = filters.fields ?? [];
 
   if (filters.q) {
@@ -96,7 +99,7 @@ export async function listItems(tx: ScopedTx, filters: ItemFilters) {
 
 export async function getItem(tx: ScopedTx, id: string) {
   const [row] = await tx
-    .select({ item, categoryName: category.name, disabledFields: category.disabledFields, officeName: office.name })
+    .select({ item, categoryName: category.name, kind: category.kind, disabledFields: category.disabledFields, officeName: office.name })
     .from(item)
     .innerJoin(category, eq(item.categoryId, category.id))
     .innerJoin(office, eq(item.officeId, office.id))
@@ -139,7 +142,7 @@ export async function inventoryStats(tx: ScopedTx) {
       value: sql<string>`coalesce(sum(${item.quantity} * ${item.unitCost}), 0)::text`,
     })
     .from(item)
-    .where(isNull(item.deletedAt));
+    .where(and(isNull(item.deletedAt), itemIsKind("stock")));
   return row;
 }
 
@@ -147,13 +150,13 @@ export const listOutOfStock = (tx: ScopedTx) =>
   tx
     .select({ id: item.id, name: item.name, unit: item.unit })
     .from(item)
-    .where(and(isNull(item.deletedAt), eq(item.quantity, 0)))
+    .where(and(isNull(item.deletedAt), eq(item.quantity, 0), itemIsKind("stock")))
     .orderBy(asc(item.name))
     .limit(5);
 
 /** Figures for the dashboard charts. RLS limits them to what this person may see. */
 export async function inventoryBreakdown(tx: ScopedTx) {
-  const active = isNull(item.deletedAt);
+  const active = and(isNull(item.deletedAt), itemIsKind("stock"));
   const byStatus = await tx.select({ label: item.status, value: count() }).from(item).where(active).groupBy(item.status);
   const byCategory = await tx
     .select({ label: category.name, value: count() })

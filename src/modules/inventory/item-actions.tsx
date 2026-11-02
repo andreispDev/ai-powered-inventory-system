@@ -134,20 +134,21 @@ export function MoveStockDialog({ itemId, unit, quantity }: { itemId: string; un
   );
 }
 
-export function DeleteItemButton({ id, name, size }: { id: string; name: string; size?: "sm" }) {
+export function DeleteItemButton({ id, name, size, records = false }: { id: string; name: string; size?: "sm"; records?: boolean }) {
   const router = useRouter();
   const { submit, state } = useSubmit(deleteItem);
   return (
     <Confirm
       title={`Delete ${name}?`}
-      description="It leaves the inventory list, and an admin can restore it. Its history is kept."
-      confirmLabel="Delete item"
+      description={`It leaves the ${records ? "records" : "inventory"} list, and an admin can restore it. Its history is kept.`}
+      confirmLabel={records ? "Delete record" : "Delete item"}
       destructive
       onConfirm={async () => {
         const result = await submit({ id });
         if (result?.ok) {
-          toast.success("Item deleted.");
-          router.push("/inventory");
+          toast.success(records ? "Record deleted." : "Item deleted.");
+          router.push(records ? "/records" : "/inventory");
+          router.refresh();
         } else if (result) toast.error(result.message);
       }}
     >

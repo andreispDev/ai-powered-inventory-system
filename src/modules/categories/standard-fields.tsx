@@ -18,7 +18,7 @@ const ICONS: Record<OptionalItemField, LucideIcon> = {
   purchaseDate: CalendarDays,
 };
 
-export function StandardFields({ categoryId, disabled, canEdit }: { categoryId: string; disabled: readonly string[]; canEdit: boolean }) {
+export function StandardFields({ categoryId, disabled, canEdit, records = false }: { categoryId: string; disabled: readonly string[]; canEdit: boolean; records?: boolean }) {
   const router = useRouter();
   const { submit, state } = useSubmit(setFieldDisabled);
   const [pending, setPending] = useState<{ field: OptionalItemField; label: string; disable: boolean } | null>(null);
@@ -53,7 +53,7 @@ export function StandardFields({ categoryId, disabled, canEdit }: { categoryId: 
           />
         )}
         <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-          {OPTIONAL_ITEM_FIELDS.map(({ id, label }) => {
+          {OPTIONAL_ITEM_FIELDS.filter((option) => !records || option.id === "location").map(({ id, label }) => {
             const Icon = ICONS[id];
             const on = !disabled.includes(id);
             return (

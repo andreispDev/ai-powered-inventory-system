@@ -1,4 +1,5 @@
-import { and, asc, ilike, isNull, or } from "drizzle-orm";
+import { and, asc, eq, ilike, isNull, or } from "drizzle-orm";
+import { itemPath } from "@/modules/inventory/kinds";
 import { getActor } from "@/server/auth/session";
 import { appUser, category, item, office } from "@/server/db/schema";
 import { AppError } from "@/server/guard/errors";
@@ -23,12 +24,13 @@ export async function GET(request: Request) {
       const found: SearchResult[] = [];
       if (can("item.read")) {
         const rows = await tx
-          .select({ id: item.id, name: item.name, sku: item.sku })
+          .select({ id: item.id, name: item.name, sku: item.sku, kind: category.kind })
           .from(item)
+          .innerJoin(category, eq(item.categoryId, category.id))
           .where(and(isNull(item.deletedAt), or(ilike(item.name, like), ilike(item.sku, like), ilike(item.serialNumber, like))))
           .orderBy(asc(item.name))
           .limit(LIMIT);
-        found.push(...rows.map((row) => ({ group: "Items", label: row.name, detail: row.sku, href: `/inventory/${row.id}` })));
+        found.push(...rows.map((row) => ({ group: row.kind === "records" ? "Records" : "Items", label: row.name, detail: row.sku, href: itemPath(row.kind, row.id) })));
       }
       if (can("category.read")) {
         const rows = await tx.select({ id: category.id, name: category.name }).from(category).where(ilike(category.name, like)).orderBy(asc(category.name)).limit(LIMIT);

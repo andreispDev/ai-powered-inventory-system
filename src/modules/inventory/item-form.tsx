@@ -41,12 +41,14 @@ export function ItemForm({
   people,
   item,
   disabledFields = [],
+  records = false,
 }: {
   categoryId: string;
   fields: readonly FieldDef[];
   people: readonly { id: string; name: string }[];
   item?: ItemFormValues;
   disabledFields?: readonly string[];
+  records?: boolean;
 }) {
   const router = useRouter();
   const create = useSubmit(createItem);
@@ -76,8 +78,8 @@ export function ItemForm({
       ? await update.submit({ ...values, attributes, id: item.id, version: item.version })
       : await create.submit({ ...values, attributes, categoryId, quantity: Number(quantity) });
     if (!result?.ok) return;
-    toast.success(item ? "Item saved." : "Item added.");
-    router.push(`/inventory/${result.data.id}`);
+    toast.success(`${records ? "Record" : "Item"} ${item ? "saved" : "added"}.`);
+    router.push(`/${records ? "records" : "inventory"}/${result.data.id}`);
   }
 
   const text = (name: keyof typeof values, label: string, icon: LucideIcon, extra?: { required?: boolean; type?: string; help?: string }) =>
@@ -100,11 +102,12 @@ export function ItemForm({
       <Card>
         <CardHeader>
           <CardTitle icon={FileText}>Details</CardTitle>
-          <CardDescription>The standard information every item has.</CardDescription>
+          <CardDescription>{records ? "The basics of this record." : "The standard information every item has."}</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2">
           <div className="sm:col-span-2">{text("name", "Name", Package, { required: true })}</div>
-          {text("sku", "SKU or code", Barcode)}
+          {text("sku", records ? "Reference number" : "SKU or code", Barcode)}
+          {!records && (
           <FormField id="status" label="Status" icon={CircleDot} errors={state.fieldErrors.status}>
             <NativeSelect
               id="status"
@@ -118,19 +121,24 @@ export function ItemForm({
               ))}
             </NativeSelect>
           </FormField>
-          {!item && (
+          )}
+          {!item && !records && (
             <FormField id="quantity" label="Starting quantity" icon={Hash} errors={state.fieldErrors.quantity}>
               <Input id="quantity" type="number" min={0} step={1} value={quantity} onChange={(event) => setQuantity(event.target.value)} />
             </FormField>
           )}
-          {text("unit", "Unit", Ruler, { required: true, help: "Such as pcs, box or kg." })}
+          {!records && text("unit", "Unit", Ruler, { required: true, help: "Such as pcs, box or kg." })}
           {text("location", "Location", MapPin)}
-          {text("condition", "Condition", Activity)}
-          {text("serialNumber", "Serial number", Fingerprint)}
-          {text("supplier", "Supplier", Truck)}
-          {text("unitCost", "Unit cost", Banknote, { type: "number" })}
-          {text("purchaseDate", "Purchase date", CalendarDays, { type: "date" })}
-          {text("warrantyExpiry", "Warranty expiry", ShieldCheck, { type: "date" })}
+          {!records && (
+            <>
+              {text("condition", "Condition", Activity)}
+              {text("serialNumber", "Serial number", Fingerprint)}
+              {text("supplier", "Supplier", Truck)}
+              {text("unitCost", "Unit cost", Banknote, { type: "number" })}
+              {text("purchaseDate", "Purchase date", CalendarDays, { type: "date" })}
+              {text("warrantyExpiry", "Warranty expiry", ShieldCheck, { type: "date" })}
+            </>
+          )}
           <div className="sm:col-span-2">
             <FormField id="notes" label="Notes" icon={StickyNote} errors={state.fieldErrors.notes}>
               <Textarea id="notes" value={values.notes} onChange={(event) => setValues({ ...values, notes: event.target.value })} />
@@ -161,7 +169,7 @@ export function ItemForm({
       )}
 
       <FormError state={state} />
-      <FormActions state={state} submitLabel={item ? "Save item" : "Add item"} />
+      <FormActions state={state} submitLabel={`${item ? "Save" : "Add"} ${records ? "record" : "item"}`} />
     </form>
   );
 }

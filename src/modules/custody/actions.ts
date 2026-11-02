@@ -3,7 +3,7 @@
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { appUser, assignment, item, transfer } from "@/server/db/schema";
+import { category, appUser, assignment, item, transfer } from "@/server/db/schema";
 import { AppError } from "@/server/guard/errors";
 import { guard } from "@/server/guard/guard";
 
@@ -43,8 +43,9 @@ export const createAssignment = guard({
     if (input.dueAt && input.dueAt < input.since) {
       throw new AppError("VALIDATION", "Please check the highlighted fields.", { dueAt: ["The return date can't be before the start date."] });
     }
-    const [target] = await tx.select({ id: item.id }).from(item).where(and(eq(item.id, input.itemId), isNull(item.deletedAt)));
+    const [target] = await tx.select({ id: item.id, kind: category.kind }).from(item).innerJoin(category, eq(item.categoryId, category.id)).where(and(eq(item.id, input.itemId), isNull(item.deletedAt)));
     if (!target) throw new AppError("NOT_FOUND", "This item no longer exists.");
+    if (target.kind === "records") throw new AppError("CONFLICT", "Records can't be assigned.");
     // RLS hides people in other offices, so this also stops assigning across offices.
     const [person] = await tx.select({ name: appUser.name, status: appUser.status }).from(appUser).where(eq(appUser.id, input.assigneeId));
     if (!person || person.status === "deactivated") {
@@ -95,6 +96,8 @@ export const createTransfer = guard({
     const officeId = officeOf(actor);
     const [source] = await tx.select().from(item).where(and(eq(item.id, input.itemId), isNull(item.deletedAt)));
     if (!source) throw new AppError("NOT_FOUND", "This item no longer exists.");
+    const [sourceCategory] = await tx.select({ kind: category.kind }).from(category).where(eq(category.id, source.categoryId));
+    if (sourceCategory?.kind === "records") throw new AppError("CONFLICT", "Records can't be transferred.");
     if (input.quantity > source.quantity) {
       throw new AppError("VALIDATION", "Please check the highlighted fields.", { quantity: [`Only ${source.quantity} ${source.unit} in stock.`] });
     }

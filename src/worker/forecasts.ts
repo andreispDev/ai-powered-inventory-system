@@ -1,6 +1,7 @@
 // The nightly forecast job. No Redis here, so tests can run it directly.
 import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import { forecastItem, keepsTheNumbers, type ForecastResult } from "../modules/forecast/engine";
+import { itemIsKind } from "../modules/inventory/kinds";
 import type { LlmClient } from "../server/ai/ollama";
 import { forecast, item, office, stockMovement } from "../server/db/schema";
 import type { ScopedTx } from "../server/db/scope";
@@ -18,7 +19,7 @@ export async function draftForecasts(tx: ScopedTx, now = new Date()): Promise<Fo
     .select({ id: item.id, officeId: item.officeId, name: item.name, quantity: item.quantity, unit: item.unit })
     .from(item)
     .innerJoin(office, eq(item.officeId, office.id))
-    .where(and(isNull(item.deletedAt), eq(office.status, "active")));
+    .where(and(isNull(item.deletedAt), eq(office.status, "active"), itemIsKind("stock")));
 
   const totals = await tx
     .select({

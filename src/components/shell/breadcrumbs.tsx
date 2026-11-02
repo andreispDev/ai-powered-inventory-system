@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 const LABELS: Record<string, string> = {
   dashboard: "Dashboard",
   inventory: "Inventory",
+  records: "Records",
   categories: "Categories",
   transfers: "Transfers",
   assignments: "Assignments",

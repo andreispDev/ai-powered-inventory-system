@@ -11,6 +11,7 @@ import {
   office,
   transfer,
 } from "../server/db/schema";
+import { itemIsKind } from "../modules/inventory/kinds";
 import type { ScopedTx } from "../server/db/scope";
 
 export type OutboxEvent = { id: string; topic: string; payload: Record<string, unknown> };
@@ -212,7 +213,7 @@ export async function scanReminders(tx: ScopedTx, now = new Date()): Promise<str
     const outOfStock = await tx
       .select({ id: item.id, name: item.name })
       .from(item)
-      .where(and(eq(item.officeId, officeId), isNull(item.deletedAt), eq(item.quantity, 0)))
+      .where(and(eq(item.officeId, officeId), isNull(item.deletedAt), eq(item.quantity, 0), itemIsKind("stock")))
       .limit(50);
     for (const row of outOfStock) {
       notified.push(

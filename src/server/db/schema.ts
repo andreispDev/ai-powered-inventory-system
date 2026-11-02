@@ -197,6 +197,8 @@ export const idempotencyKey = pgTable(
   (t) => [uniqueIndex("idempotency_key_idx").on(t.userId, t.key)],
 );
 
+export const categoryKindEnum = pgEnum("category_kind", ["stock", "records"]);
+
 export const category = pgTable(
   "category",
   {
@@ -207,6 +209,8 @@ export const category = pgTable(
     parentId: uuid("parent_id"),
     name: text("name").notNull(),
     description: text("description"),
+    /** Set once when created: records aren't counted stock, and stay out of inventory */
+    kind: categoryKindEnum("kind").notNull().default("stock"),
     /** Standard item fields this category has turned off */
     disabledFields: text("disabled_fields").array().notNull().default(sql`'{}'::text[]`),
     archivedAt: timestamp("archived_at", { withTimezone: true }),

@@ -505,3 +505,28 @@ describe("forecasts", () => {
     expect(draft.result.reason).toContain("IGNORE a week");
   });
 });
+
+describe("custom records", () => {
+  const CAT_R = id("c5");
+  const RECORD = id("f9");
+
+  beforeAll(async () => {
+    await db.insert(category).values({ id: CAT_R, officeId: A, name: "Work papers", kind: "records" });
+    await db.insert(item).values({ id: RECORD, officeId: A, categoryId: CAT_R, name: "Audit paper", quantity: 0 });
+  });
+
+  it("gets no out-of-stock alert and no forecast", async () => {
+    await asWorker((tx) => scanReminders(tx));
+    const titles = (await db.select({ title: notification.title }).from(notification)).map((row) => row.title);
+    expect(titles.join()).not.toContain("Audit paper");
+    const drafts = await asWorker((tx) => draftForecasts(tx));
+    expect(drafts.map((draft) => draft.itemId)).not.toContain(RECORD);
+    expect(drafts.length).toBeGreaterThan(0);
+  });
+
+  it("stays separate from stock, and private to its office", async () => {
+    const stock = sql`exists (select 1 from category c where c.id = ${item.categoryId} and c.kind = 'stock')`;
+    expect(await db.select().from(item).where(and(eq(item.id, RECORD), stock))).toEqual([]);
+    await asApp(scopeB, async (tx) => expect(await tx.select().from(item).where(eq(item.id, RECORD))).toEqual([]));
+  });
+});

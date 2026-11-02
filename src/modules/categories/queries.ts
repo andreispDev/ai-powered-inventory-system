@@ -11,6 +11,7 @@ export const listCategories = (tx: ScopedTx) =>
     .select({
       id: category.id,
       name: category.name,
+      kind: category.kind,
       description: category.description,
       parentId: category.parentId,
       archivedAt: category.archivedAt,

@@ -25,7 +25,7 @@ async function Content({ searchParams }: Props) {
   if (categoryId && z.uuid().safeParse(categoryId).success) {
     const data = await readScoped(actor, async (tx) => {
       const row = await getCategory(tx, categoryId);
-      if (!row || row.archivedAt) return null;
+      if (!row || row.archivedAt || row.kind !== "stock") return null;
       return { row, fields: await listFields(tx, categoryId), people: await listPeople(tx) };
     });
     if (data) {
@@ -43,7 +43,7 @@ async function Content({ searchParams }: Props) {
     }
   }
 
-  const categories = (await readScoped(actor, listCategories)).filter((c) => !c.archivedAt);
+  const categories = (await readScoped(actor, listCategories)).filter((c) => !c.archivedAt && c.kind === "stock");
   return (
     <PageContainer width="narrow">
       <PageHeader title="Add item" description="Which category does it belong to?" />

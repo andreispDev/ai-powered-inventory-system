@@ -58,13 +58,20 @@ const categoryInput = z.object({
 
 export const createCategory = guard({
   permission: "category.create",
-  input: categoryInput.extend({ parentId: z.uuid().optional() }),
+  input: categoryInput.extend({ parentId: z.uuid().optional(), kind: z.enum(["stock", "records"]).default("stock") }),
   run: async ({ input, tx, actor, audit }) => {
     const officeId = officeOf(actor);
     if (input.parentId && (await depthOf(tx, input.parentId)) >= MAX_DEPTH) {
       throw new AppError("VALIDATION", "Categories can be nested up to 3 levels.", {
         parentId: ["This is already at the deepest level."],
       });
+    }
+    // A category sits only inside its own kind, so one tree never mixes stock and records.
+    if (input.parentId) {
+      const [parent] = await tx.select({ kind: category.kind }).from(category).where(eq(category.id, input.parentId));
+      if (parent && parent.kind !== input.kind) {
+        throw new AppError("VALIDATION", "Please check the highlighted fields.", { parentId: ["That category is a different type."] });
+      }
     }
     let row;
     try {

@@ -85,6 +85,7 @@ async function Content({ params }: Props) {
   const activeFields = data.fields.filter((field) => !field.retiredAt);
   const out = item.quantity === 0;
   const isOff = (field: string) => data.disabledFields.includes(field);
+  const records = data.kind === "records";
 
   return (
     <PageContainer>
@@ -96,9 +97,9 @@ async function Content({ params }: Props) {
             can("item.restore") ? <RestoreItemButton id={item.id} /> : undefined
           ) : (
             <>
-              {can("stock.move") && <MoveStockDialog itemId={item.id} unit={item.unit} quantity={item.quantity} />}
-              {can("assignment.manage") && <AssignDialog itemId={item.id} people={data.people} />}
-              {can("transfer.create") && (
+              {!records && can("stock.move") && <MoveStockDialog itemId={item.id} unit={item.unit} quantity={item.quantity} />}
+              {!records && can("assignment.manage") && <AssignDialog itemId={item.id} people={data.people} />}
+              {!records && can("transfer.create") && (
                 <TransferDialog
                   itemId={item.id}
                   unit={item.unit}
@@ -108,10 +109,10 @@ async function Content({ params }: Props) {
               )}
               {can("item.update") && (
                 <Button variant="outline" asChild>
-                  <Link href={`/inventory/${item.id}/edit`}>Edit</Link>
+                  <Link href={`/${records ? "records" : "inventory"}/${item.id}/edit`}>Edit</Link>
                 </Button>
               )}
-              {can("item.delete") && <DeleteItemButton id={item.id} name={item.name} />}
+              {can("item.delete") && <DeleteItemButton id={item.id} name={item.name} records={records} />}
             </>
           )
         }
@@ -146,6 +147,7 @@ async function Content({ params }: Props) {
         </Card>
       )}
 
+      {!records && (
       <div className={`grid gap-4 ${isOff("location") ? "sm:grid-cols-2" : "sm:grid-cols-3"}`}>
         <Card>
           <CardHeader>
@@ -173,6 +175,7 @@ async function Content({ params }: Props) {
           </Card>
         )}
       </div>
+      )}
 
       <Card>
         <CardHeader>
@@ -180,7 +183,13 @@ async function Content({ params }: Props) {
         </CardHeader>
         <CardContent className="space-y-4">
           <Detail
-            rows={[
+            rows={records ? [
+              ["Reference", item.sku],
+              ...(isOff("location") ? [] : ([["Location", item.location]] as [string, string | null][])),
+              ...activeFields.map(
+                (field): [string, string] => [field.label, formatAttribute(item.attributes[field.key], field, peopleById)],
+              ),
+            ] : [
               ["SKU", item.sku],
               ["Serial number", item.serialNumber],
               ["Condition", item.condition],
@@ -197,6 +206,8 @@ async function Content({ params }: Props) {
         </CardContent>
       </Card>
 
+      {!records && (
+      <>
       <Card className="gap-3">
         <CardHeader>
           <CardTitle icon={UserCheck}>Custody</CardTitle>
@@ -276,6 +287,8 @@ async function Content({ params }: Props) {
           )}
         </CardContent>
       </Card>
+      </>
+      )}
 
       <Card className="gap-3">
         <CardHeader>

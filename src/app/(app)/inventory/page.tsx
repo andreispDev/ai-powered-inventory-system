@@ -34,7 +34,7 @@ async function Content({ searchParams }: Props) {
   const deleted = canRestore && param(params, "view") === "deleted";
 
   const data = await readScoped(actor, async (tx) => {
-    const categories = await listCategories(tx);
+    const categories = (await listCategories(tx)).filter((row) => row.kind === "stock");
     const fields = categoryId ? await listFields(tx, categoryId) : [];
     const attributes: Record<string, string> = {};
     for (const field of fields) {

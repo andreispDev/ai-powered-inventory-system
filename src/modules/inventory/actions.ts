@@ -49,18 +49,25 @@ async function validateAttributes(tx: ScopedTx, categoryId: string, attributes: 
   return { attributes: parsed.data, activeKeys: new Set(fields.map((f) => f.key)) };
 }
 
+/** Records aren't counted, so nothing about stock applies to them. */
+async function assertStock(tx: ScopedTx, categoryId: string) {
+  const [parent] = await tx.select({ kind: category.kind }).from(category).where(eq(category.id, categoryId));
+  if (parent?.kind === "records") throw new AppError("CONFLICT", "This is a record, not a stock item.");
+}
+
 export const createItem = guard({
   permission: "item.create",
   input: itemCoreSchema.extend({
     categoryId: z.uuid(),
     quantity: z.coerce.number().int("Enter a whole number.").min(0, "Can't be negative.").max(1_000_000),
   }),
-  run: async ({ input: { attributes: rawAttributes, quantity, ...core }, tx, actor, audit }) => {
+  run: async ({ input: { attributes: rawAttributes, quantity: requested, ...core }, tx, actor, audit }) => {
     if (!actor.officeId) throw new AppError("FORBIDDEN", "Inventory changes are made by office accounts.");
     const [parent] = await tx.select().from(category).where(eq(category.id, core.categoryId));
     if (!parent) throw new AppError("NOT_FOUND", "This category no longer exists.");
     if (parent.archivedAt) throw new AppError("CONFLICT", "This category is archived.");
     const { attributes } = await validateAttributes(tx, core.categoryId, rawAttributes);
+    const quantity = parent.kind === "records" ? 0 : requested;
 
     let row;
     try {
@@ -85,6 +92,7 @@ export const createItem = guard({
     }
     await audit({ action: "item.created", entityType: "item", entityId: row.id, after: { ...core, quantity, attributes } });
     revalidatePath("/inventory");
+    revalidatePath("/records");
     return { id: row.id };
   },
 });
@@ -144,6 +152,7 @@ export const moveStock = guard({
     if (!actor.officeId) throw new AppError("FORBIDDEN", "Inventory changes are made by office accounts.");
     const [row] = await tx.select().from(item).where(and(eq(item.id, itemId), isNull(item.deletedAt))).for("update");
     if (!row) throw missing();
+    await assertStock(tx, row.categoryId);
 
     const delta = deltaOf(type, amount);
     const balanceAfter = row.quantity + delta;

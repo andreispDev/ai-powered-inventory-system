@@ -25,8 +25,8 @@ async function Content({ params }: Props) {
   const data = await readScoped(actor, async (tx) => {
     const [row] = await tx.select().from(item).where(eq(item.id, itemId));
     if (!row || row.deletedAt) return null;
-    const [parent] = await tx.select({ disabledFields: category.disabledFields }).from(category).where(eq(category.id, row.categoryId));
-    return { row, disabledFields: parent?.disabledFields ?? [], fields: await listFields(tx, row.categoryId), people: await listPeople(tx) };
+    const [parent] = await tx.select({ disabledFields: category.disabledFields, kind: category.kind }).from(category).where(eq(category.id, row.categoryId));
+    return { row, records: parent?.kind === "records", disabledFields: parent?.disabledFields ?? [], fields: await listFields(tx, row.categoryId), people: await listPeople(tx) };
   });
   if (!data) notFound();
 
@@ -39,6 +39,7 @@ async function Content({ params }: Props) {
         fields={data.fields.map(({ key, label, type, config }) => ({ key, label, type, config }))}
         people={data.people}
         disabledFields={data.disabledFields}
+        records={data.records}
         item={{
           id: row.id,
           version: row.version,

@@ -115,6 +115,25 @@ describe("assistant tools", () => {
   });
 });
 
+describe("assistant and custom records", () => {
+  beforeAll(async () => {
+    await db.insert(category).values({ id: id("c7"), officeId: A, name: "Work papers", kind: "records" });
+    await db.insert(item).values({ id: id("e9"), officeId: A, categoryId: id("c7"), name: "Audit paper", quantity: 0 });
+  });
+
+  it("finds a record, without calling it out of stock", async () => {
+    const result = await tool(scopeA, "search_items", { query: "audit paper" });
+    expect(result.data).toMatchObject({ found: 1, items: [{ name: "Audit paper", type: "record" }] });
+    expect(JSON.stringify(result.data)).not.toContain("quantity");
+    expect(result.sources).toEqual([{ label: "Audit paper", href: `/records/${id("e9")}` }]);
+  });
+
+  it("leaves records out of stock counts", async () => {
+    const { data } = await tool(scopeA, "aggregate_inventory", { out_of_stock_only: "true" });
+    expect(data).toMatchObject({ results: [{ differentItems: 1 }] });
+  });
+});
+
 describe("assistant chat records", () => {
   it("are private to the person, even from their admin or a Developer", async () => {
     const [chat] = await asApp(scopeA, (tx) => tx.insert(aiConversation).values({ id: id("c1"), userId: ADMIN_A, officeId: A, title: "Mine" }).returning());
