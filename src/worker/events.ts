@@ -161,6 +161,14 @@ export async function handleEvent(tx: ScopedTx, event: OutboxEvent): Promise<str
     }
     case "announcement.created":
       return sendAnnouncement(tx, String(payload.announcementId));
+    case "permission.requested":
+      return notify(tx, await developers(tx), {
+        kind: "permission_request",
+        title: `${String(payload.requesterName)} asked for ${String(payload.permission)}`,
+        body: `From ${String(payload.officeName)}. Approve or decline it.`,
+        link: "/console/permissions",
+        dedupeKey: `permission.requested:${String(payload.requestId)}`,
+      });
     case "permission.changed":
       return notify(tx, (payload.userIds as string[]) ?? [], {
         kind: "permission",

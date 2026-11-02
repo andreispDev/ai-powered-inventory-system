@@ -31,10 +31,10 @@ async function check(): Promise<Connection> {
   }
 }
 
-function subscribe(listener: () => void) {
-  listeners.add(listener);
-  if (listeners.size > 1) return () => void listeners.delete(listener);
+let stopMonitor: (() => void) | null = null;
 
+/** One monitor runs while anything is listening, however components come and go. */
+function startMonitor() {
   let graceTimer: ReturnType<typeof setTimeout> | undefined;
   const run = async () => {
     clearTimeout(graceTimer);
@@ -49,11 +49,22 @@ function subscribe(listener: () => void) {
   void run();
 
   return () => {
-    listeners.delete(listener);
     clearTimeout(graceTimer);
     clearInterval(interval);
     window.removeEventListener("online", run);
     window.removeEventListener("offline", run);
+  };
+}
+
+function subscribe(listener: () => void) {
+  listeners.add(listener);
+  stopMonitor ??= startMonitor();
+  return () => {
+    listeners.delete(listener);
+    if (listeners.size === 0) {
+      stopMonitor?.();
+      stopMonitor = null;
+    }
   };
 }
 

@@ -342,6 +342,50 @@ describe("audit hash chain", () => {
   });
 });
 
+describe("permission requests", () => {
+  it("are private to the person asking, and only Developers decide them", async () => {
+    await asApp(scopeA, (tx) => tx.insert(schema.permissionRequest).values({ officeId: A, requesterId: ADMIN_A, permission: "item.delete", justification: "Cleaning up" }));
+    await asApp(scopeA, async (tx) => expect(await tx.select().from(schema.permissionRequest)).toHaveLength(1));
+    await asApp(scopeUserA, async (tx) => expect(await tx.select().from(schema.permissionRequest)).toEqual([]));
+    await asApp(scopeB, async (tx) => expect(await tx.select().from(schema.permissionRequest)).toEqual([]));
+    await asApp(platform, async (tx) => expect(await tx.select().from(schema.permissionRequest)).toHaveLength(1));
+
+    // An admin can't approve their own request, or file one as someone else.
+    await asApp(scopeA, (tx) => tx.update(schema.permissionRequest).set({ status: "approved" }));
+    expect((await db.select().from(schema.permissionRequest))[0].status).toBe("pending");
+    expect(
+      await failure(asApp(scopeA, (tx) => tx.insert(schema.permissionRequest).values({ officeId: A, requesterId: USER_A, permission: "item.restore", justification: "fake" }))),
+    ).not.toBeNull();
+  });
+
+  it("allows one pending request per permission, and tells Developers", async () => {
+    expect(
+      await failure(asApp(scopeA, (tx) => tx.insert(schema.permissionRequest).values({ officeId: A, requesterId: ADMIN_A, permission: "item.delete", justification: "again" }))),
+    ).not.toBeNull();
+    const notified = await asWorker((tx) =>
+      handleEvent(tx, { id: id("e9"), topic: "permission.requested", payload: { requestId: id("f1"), permission: "item.delete", requesterName: "Maria", officeName: "Office A" } }),
+    );
+    expect(notified).toEqual([DEV]);
+  });
+});
+
+describe("transfer answers", () => {
+  it("a rejected or cancelled transfer tells the other side and moves no stock", async () => {
+    const [before] = await db.select().from(item).where(eq(item.id, ITEM_A));
+    const rejected = await newTransfer(1);
+    await asApp(scopeB, (tx) => tx.update(transfer).set({ status: "rejected", respondedByName: "Bea" }).where(eq(transfer.id, rejected.id)));
+    const told = await asWorker((tx) => handleEvent(tx, { id: id("e7"), topic: "transfer.rejected", payload: { transferId: rejected.id } }));
+    expect(told).toEqual([ADMIN_A]);
+    const cancelled = await newTransfer(1);
+    await asApp(scopeA, (tx) => tx.update(transfer).set({ status: "cancelled" }).where(eq(transfer.id, cancelled.id)));
+    const toldB = await asWorker((tx) => handleEvent(tx, { id: id("e8"), topic: "transfer.cancelled", payload: { transferId: cancelled.id } }));
+    expect(toldB).toEqual([ADMIN_B]);
+    expect(await failure(complete(scopeB, cancelled.id))).toContain("transfer_not_pending");
+    const [after] = await db.select().from(item).where(eq(item.id, ITEM_A));
+    expect(after.quantity).toBe(before.quantity);
+  });
+});
+
 describe("office directory", () => {
   it("shares office names and nothing more", async () => {
     const result = (await asApp(scopeA, (tx) => tx.execute(sql`select * from office_directory()`))) as unknown as { rows: Record<string, unknown>[] };

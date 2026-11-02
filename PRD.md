@@ -328,7 +328,7 @@ Full specification in [Design.md](Design.md).
 | **4. Hardening and launch** | Load test, penetration test, restore rehearsal, accessibility audit, runbooks, rollout | All section 5 targets verified |
 | **5. Post-launch** | P1 and then P2 items | Driven by usage |
 
-**Not yet built, though listed as P0:** the command palette, breadcrumbs, per-person notification settings are P1, phone card layouts for tables (they scroll sideways), and error rate and response times on the health screen, which need the Phase 4 monitoring tools. Assignments go to a person; giving stock to another office is a transfer. Permission requests from admins (PERM-6, P1) aren't built, so a Developer grants access directly.
+**Scope notes:** assignments go to a person, and giving stock to another office is a transfer. Error rate and response times on the health screen need the Phase 4 monitoring tools.
 
 ---
 

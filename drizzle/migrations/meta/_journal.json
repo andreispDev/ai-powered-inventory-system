@@ -50,6 +50,20 @@
       "when": 1793621720000,
       "tag": "0006_operations_security",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1793625313649,
+      "tag": "0007_permission_requests",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1793625315154,
+      "tag": "0008_permission_requests_security",
+      "breakpoints": true
     }
   ]
 }

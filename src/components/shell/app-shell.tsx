@@ -5,6 +5,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import { OfflineBanner, ConnectionIndicator } from "@/components/connectivity/connectivity";
+import { Breadcrumbs } from "@/components/shell/breadcrumbs";
+import { CommandPalette } from "@/components/shell/command-palette";
 import { NotificationBell, UrgentBanner } from "@/components/shell/notifications";
 import { RealtimeProvider } from "@/components/providers/realtime-provider";
 import { Confirm } from "@/components/feedback/confirm";
@@ -254,7 +256,9 @@ export function AppShell({ user, children }: { user: ShellUser; children: ReactN
       <SidebarInset>
         <header className="bg-background/90 shadow-card sticky top-0 z-10 flex h-14 items-center gap-2 border-b px-4 backdrop-blur">
           <SidebarTrigger aria-label="Toggle sidebar" />
+          <Breadcrumbs />
           <div className="ml-auto flex items-center gap-1">
+            <CommandPalette permissions={user.permissions} />
             <ConnectionIndicator />
             <NotificationBell />
             <AppearanceMenu />

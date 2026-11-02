@@ -4,12 +4,33 @@ import * as React from "react"
 import { cn } from "cn"
 
 function Table({ className, ...props }: React.ComponentProps<"table">) {
+  const ref = React.useRef<HTMLTableElement>(null)
+
+  // Phones show each row as a card, and each cell needs its column's name as a label.
+  React.useEffect(() => {
+    const table = ref.current
+    if (!table) return
+    const label = () => {
+      const heads = [...table.querySelectorAll("thead th")].map((th) => th.textContent ?? "")
+      table.querySelectorAll("tbody tr").forEach((row) => {
+        ;[...(row as HTMLTableRowElement).cells].forEach((cell, index) => {
+          if (cell.dataset.label !== heads[index]) cell.dataset.label = heads[index] ?? ""
+        })
+      })
+    }
+    label()
+    const observer = new MutationObserver(label)
+    observer.observe(table, { childList: true, subtree: true })
+    return () => observer.disconnect()
+  }, [])
+
   return (
     <div
       data-slot="table-container"
       className="relative w-full overflow-x-auto"
     >
       <table
+        ref={ref}
         data-slot="table"
         className={cn("w-full caption-bottom text-sm", className)}
         {...props}

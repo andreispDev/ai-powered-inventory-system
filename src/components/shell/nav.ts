@@ -56,6 +56,7 @@ const NAV: NavGroup[] = [
     items: [
       { label: "Accounts", icon: Users, href: "/accounts", permission: "user.read" },
       { label: "Permissions", icon: KeyRound, href: "/console/permissions", permission: "permission.grant" },
+      { label: "My access", icon: KeyRound, href: "/access", permission: "access.request" },
       { label: "Live monitor", icon: Activity, href: "/monitor", permission: "monitor.office" },
       { label: "Live monitor", icon: Activity, href: "/monitor", permission: "monitor.all" },
       { label: "Logs", icon: ScrollText, href: "/logs", permission: "audit.read.all" },

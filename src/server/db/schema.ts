@@ -429,3 +429,29 @@ export const auditCheckpoint = pgTable("audit_checkpoint", {
   hash: text("hash").notNull(),
   at: timestamp("at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+export const requestStatusEnum = pgEnum("request_status", ["pending", "approved", "rejected"]);
+
+export const permissionRequest = pgTable(
+  "permission_request",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    officeId: uuid("office_id")
+      .notNull()
+      .references(() => office.id),
+    requesterId: uuid("requester_id")
+      .notNull()
+      .references(() => appUser.id),
+    permission: text("permission").notNull(),
+    justification: text("justification").notNull(),
+    status: requestStatusEnum("status").notNull().default("pending"),
+    decidedBy: uuid("decided_by").references(() => appUser.id),
+    decisionNote: text("decision_note"),
+    decidedAt: timestamp("decided_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("permission_request_status_idx").on(t.status, t.createdAt.desc()),
+    uniqueIndex("permission_request_one_pending_idx").on(t.requesterId, t.permission).where(sql`${t.status} = 'pending'`),
+  ],
+);

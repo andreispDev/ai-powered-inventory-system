@@ -129,6 +129,44 @@
   );
 }
 
+/* Phones: each table row becomes a card, with column names as labels. */
+@media (max-width: 39.99rem) {
+  [data-slot="table-header"] {
+    display: none;
+  }
+
+  [data-slot="table"],
+  [data-slot="table-body"] {
+    display: block;
+  }
+
+  [data-slot="table-row"] {
+    display: block;
+    padding: 0.5rem 0.75rem;
+  }
+
+  [data-slot="table-cell"] {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.25rem 0;
+    text-align: right;
+    white-space: normal;
+    max-width: none;
+  }
+
+  [data-slot="table-cell"]::before {
+    content: attr(data-label);
+    flex-shrink: 0;
+    color: var(--muted-foreground);
+    font-size: 0.75rem;
+  }
+
+  [data-slot="table-cell"]:empty {
+    display: none;
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
