@@ -1,0 +1,12 @@
+/* UI scale. Percentages keep the browser's own font-size setting working. */
+html {
+  font-size: 100%;
+}
+
+html[data-scale="compact"] {
+  font-size: 90%;
+}
+
+html[data-scale="large"] {
+  font-size: 125%;
+}

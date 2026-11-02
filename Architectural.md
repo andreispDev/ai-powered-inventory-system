@@ -188,7 +188,7 @@ CREATE POLICY item_write ON item FOR ALL
 
 - `withScope(actor, fn)` opens a transaction and uses `SET LOCAL`. This resets at commit, so it's safe with PgBouncer in transaction mode and can't leak across pooled connections.
 - If the scope isn't set, the settings are empty and **no rows come back**. Forgetting the scope fails closed.
-- The app connects with a role that isn't superuser and lacks `BYPASSRLS`. Migrations use a separate role whose credentials aren't available to the app at run time.
+- The app connects as `inventory_app`, which isn't a superuser and lacks `BYPASSRLS`. Sign-in connects as `inventory_auth`, which can read accounts before a scope exists and can't read inventory. Migrations use a separate role whose credentials aren't available to the app at run time.
 - Composite foreign keys like `(office_id, category_id)` stop a row from referencing another office's records, even by mistake.
 - Worker jobs set their scope explicitly per office. Only named platform jobs use platform scope.
 - Developer platform-scope reads are logged at page level (PRD LOG-8).

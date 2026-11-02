@@ -328,7 +328,8 @@ Validated by `server/env.ts` at boot, so a bad deploy fails immediately. `.env.e
 
 | Variable | Purpose |
 |---|---|
-| `DATABASE_URL`, `DATABASE_MIGRATOR_URL` | App role and migration role |
+| `DATABASE_ADMIN_URL` | Superuser, used only by `db:setup` and `bootstrap:developer` |
+| `DATABASE_URL`, `DATABASE_AUTH_URL` | Restricted app role, and the sign-in role that reads accounts before a scope exists. `db:setup` generates both |
 | `REDIS_URL` | Limits, queues, event streams, cache |
 | `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` | Sessions |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Sign-in |
