@@ -74,7 +74,7 @@ export function SignInForm() {
     return (
       <form onSubmit={submitEmail} className="space-y-4">
         {idle && (
-          <p role="status" className="rounded-lg bg-white/15 px-3 py-2 text-sm">
+          <p role="status" className="bg-muted rounded-lg px-3 py-2 text-sm">
             You were signed out after 5 minutes of inactivity.
           </p>
         )}
@@ -89,13 +89,13 @@ export function SignInForm() {
             required
             autoFocus
             autoComplete="email"
-            placeholder="you@gmail.com"
+            placeholder="name@organization.com"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
           />
         </div>
         {error && (
-          <p role="alert" className="rounded-lg border border-white/30 bg-black/30 px-3 py-2 text-sm text-white">
+          <p role="alert" className="bg-destructive/10 text-destructive rounded-lg px-3 py-2 text-sm">
             {error}
           </p>
         )}
@@ -109,7 +109,7 @@ export function SignInForm() {
 
   return (
     <form onSubmit={submitCode} className="space-y-4">
-      <p className="text-sm opacity-90">
+      <p className="text-muted-foreground text-sm">
         If <span className="text-foreground font-medium break-all">{email}</span> has an account, a 6-digit code is on
         its way. It expires in 5 minutes.
       </p>
@@ -132,7 +132,7 @@ export function SignInForm() {
         />
       </div>
       {error && (
-        <p role="alert" className="rounded-lg border border-white/30 bg-black/30 px-3 py-2 text-sm text-white">
+        <p role="alert" className="bg-destructive/10 text-destructive rounded-lg px-3 py-2 text-sm">
           {error}
         </p>
       )}

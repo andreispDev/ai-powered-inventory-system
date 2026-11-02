@@ -26,10 +26,10 @@ export function WorkspaceSettings({ name, logoUrl }: { name: string | null; logo
   }
 
   return (
-    <Card>
+    <Card id="workspace" className="scroll-mt-20">
       <CardHeader>
         <CardTitle icon={Building2}>Workspace</CardTitle>
-        <CardDescription>Everyone in your office sees this name and logo in the sidebar.</CardDescription>
+        <CardDescription>Your office&apos;s own name and logo, shown to everyone in your office instead of &ldquo;Inventory&rdquo;.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-5">
         <ImagePicker

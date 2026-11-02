@@ -1,6 +1,6 @@
 "use client";
 
-import { Boxes, Code2, LogOut, Monitor, Moon, Palette, Settings, ShieldCheck, Sun, User, UserRound, type LucideIcon } from "lucide-react";
+import { Boxes, Building2, Code2, LogOut, Monitor, Moon, Palette, Settings, ShieldCheck, Sun, User, UserRound, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
@@ -214,7 +214,7 @@ function UserMenu({ user }: { user: ShellUser }) {
         <Button variant="ghost" size="icon" aria-label="Account menu" className="rounded-full">
           <Avatar className="size-7">
             {user.image && <AvatarImage src={user.image} alt="" />}
-            <AvatarFallback className="text-xs">{initials(user.name)}</AvatarFallback>
+            <AvatarFallback className="avatar-deep text-xs">{initials(user.name)}</AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
@@ -222,7 +222,7 @@ function UserMenu({ user }: { user: ShellUser }) {
         <div className="welcome-banner welcome-hero text-primary-foreground -mx-1 -mt-1 mb-1 flex items-center gap-3 rounded-t-[inherit] px-3 py-3">
           <Avatar className="ring-primary-foreground/40 size-10 ring-2">
             {user.image && <AvatarImage src={user.image} alt="" />}
-            <AvatarFallback className="text-foreground text-sm">{initials(user.name)}</AvatarFallback>
+            <AvatarFallback className="avatar-deep text-sm">{initials(user.name)}</AvatarFallback>
           </Avatar>
           <span className="inline-flex items-center gap-1.5 rounded-full bg-black/25 px-2.5 py-1 text-sm font-medium">
             <RoleIcon className="size-3.5" aria-hidden />
@@ -236,6 +236,14 @@ function UserMenu({ user }: { user: ShellUser }) {
             Profile
           </Link>
         </DropdownMenuItem>
+        {user.permissions.includes("workspace.manage") && (
+          <DropdownMenuItem asChild>
+            <Link href="/settings#workspace">
+              <Building2 aria-hidden />
+              Workspace name and logo
+            </Link>
+          </DropdownMenuItem>
+        )}
         <DropdownMenuItem asChild>
           <Link href="/settings">
             <Settings aria-hidden />

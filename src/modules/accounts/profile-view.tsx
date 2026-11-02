@@ -58,7 +58,7 @@ const title = (text: string) => text[0].toUpperCase() + text.slice(1);
 export function ProfilePhoto({ name, url, picked }: { name: string; url: string | null; picked?: string | null }) {
   const source = picked ?? url;
   return (
-    <span className="bg-primary text-primary-foreground ring-card shadow-raised flex size-24 shrink-0 items-center justify-center overflow-hidden rounded-full text-3xl font-semibold ring-4">
+    <span className="avatar-deep ring-card shadow-raised flex size-24 shrink-0 items-center justify-center overflow-hidden rounded-full text-3xl font-semibold ring-4">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       {source ? <img src={source} alt={`${name}'s photo`} className="size-full object-cover" /> : initials(name)}
     </span>
@@ -99,7 +99,7 @@ export function ProfileView({
   return (
     <>
       <Card className="gap-0 overflow-hidden py-0">
-        <div aria-hidden className="welcome-banner relative isolate h-28">
+        <div aria-hidden className="welcome-banner welcome-hero relative isolate h-28">
           <div className="welcome-rings absolute inset-0 -z-10" />
         </div>
         <div className="flex flex-wrap items-end justify-between gap-4 px-6 pb-6">
@@ -107,6 +107,7 @@ export function ProfileView({
             {photo}
             <div className="min-w-0">
               <h1 className="text-2xl font-semibold tracking-tight break-words">{name}</h1>
+              <p className="text-muted-foreground text-sm break-all">{email}</p>
               <div className="mt-1.5 flex flex-wrap items-center gap-2">
                 <Badge>{title(role)}</Badge>
                 <Badge variant={status === "active" ? "secondary" : "outline"}>{title(status)}</Badge>

@@ -85,7 +85,7 @@ export function ImagePicker({
           <>
             <Button variant="outline" disabled={busy} onClick={() => input.current?.click()}>
               <ImagePlus aria-hidden />
-              {hasImage ? "Change" : "Upload"}
+              {hasImage ? "Change photo" : "Upload photo"}
             </Button>
             {hasImage && (
               <Confirm
