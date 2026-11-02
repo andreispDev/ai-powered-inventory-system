@@ -5,7 +5,8 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { DonutChart } from "@/components/charts/donut-chart";
 import { LocalTime } from "@/components/shell/local-time";
-import { EmptyState, PageContainer, PageHeader, PageSkeleton, StatCard } from "@/components/shell/page";
+import { EmptyState, PageContainer, PageSkeleton, StatCard } from "@/components/shell/page";
+import { WelcomeBanner } from "@/components/shell/welcome-banner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { countCategories } from "@/modules/categories/queries";
@@ -29,6 +30,24 @@ const ACTION_LABELS: Record<string, string> = {
   "category.created": "created a category",
   "user.created": "created an account",
   "office.created": "created an office",
+  "user.photo_changed": "changed their photo",
+  "user.photo_removed": "removed their photo",
+  "workspace.renamed": "renamed the workspace",
+  "workspace.logo_changed": "changed the workspace logo",
+  "workspace.logo_removed": "removed the workspace logo",
+  "transfer.requested": "started a transfer",
+  "transfer.completed": "completed a transfer",
+  "transfer.rejected": "rejected a transfer",
+  "transfer.cancelled": "cancelled a transfer",
+  "assignment.created": "assigned an item",
+  "assignment.returned": "marked an item returned",
+  "announcement.created": "sent an announcement",
+  "permission.granted": "changed someone's access",
+  "permission.cleared": "changed someone's access",
+  "permission.requested": "asked for access",
+  "permission.request_approved": "approved an access request",
+  "permission.request_rejected": "declined an access request",
+  "notification.acknowledged": "acknowledged an announcement",
 };
 
 async function Content() {
@@ -56,17 +75,36 @@ async function Content() {
   });
 
   const value = Number(data.stats.value);
+  const waiting = data.stats.outOfStock;
   const description =
     actor.role === "developer"
-      ? "Overview across all offices."
-      : actor.role === "admin"
-        ? `${actor.officeName} at a glance.`
-        : "What needs your attention today.";
+      ? "Here's how every office is doing."
+      : waiting > 0
+        ? `${waiting} ${waiting === 1 ? "item needs" : "items need"} attention in ${actor.officeName}.`
+        : `Everything is in stock at ${actor.officeName}.`;
 
   return (
     <PageContainer>
-      <PageHeader title={`Welcome, ${actor.name.split(" ")[0]}`} description={description} />
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(13rem,1fr))] gap-4">
+      <WelcomeBanner
+        name={actor.name.split(" ")[0]}
+        badge={actor.workspaceName ?? actor.officeName ?? "All offices"}
+        subtitle={description}
+        media={
+          actor.logoUrl ? (
+            <span className="flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white shadow-sm">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={actor.logoUrl} alt="" className="size-full object-contain" />
+            </span>
+          ) : undefined
+        }
+        actions={[
+          ...(can("item.create") ? [{ label: "Add item", href: "/inventory/new" }] : []),
+          ...(can("office.manage") ? [{ label: "Offices", href: "/console/offices" }] : []),
+          ...(can("monitor.office") || can("monitor.all") ? [{ label: "Live monitor", href: "/monitor" }] : []),
+          { label: "My profile", href: "/profile" },
+        ]}
+      />
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(10.5rem,1fr))] gap-4">
         {actor.role === "developer" && <StatCard label="Active offices" icon={Building2} value={data.offices.toLocaleString()} href="/console/offices" />}
         <StatCard label="Items" icon={Boxes} value={data.stats.items.toLocaleString()} href="/inventory" />
         <StatCard label="Out of stock" icon={PackageX} value={data.stats.outOfStock.toLocaleString()} href="/inventory" />

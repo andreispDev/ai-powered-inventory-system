@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { cache } from "react";
 import { effectivePermissions, type Permission, type Role } from "../authz/catalog";
 import { getAuthDb } from "../db/client";
-import { appUser, office, permissionGrant } from "../db/schema";
+import { appUser, office, officeBranding, permissionGrant, userAvatar } from "../db/schema";
 import { isConfigured } from "../env";
 import { getAuth } from "./config";
 import { isPastAbsoluteLimit } from "./sign-in-rules";
@@ -18,6 +18,9 @@ export type Actor = {
   role: Role;
   officeId: string | null;
   officeName: string | null;
+  /** The office's chosen name for the app, if it set one */
+  workspaceName: string | null;
+  logoUrl: string | null;
   permissions: Permission[];
   preferences: Record<string, unknown> | null;
 };
@@ -34,9 +37,18 @@ export async function actorFromHeaders(requestHeaders: Headers): Promise<Actor |
 
   const db = getAuthDb();
   const [row] = await db
-    .select({ user: appUser, officeName: office.name })
+    .select({
+      user: appUser,
+      officeName: office.name,
+      workspaceName: officeBranding.workspaceName,
+      logoType: officeBranding.logoType,
+      brandingAt: officeBranding.updatedAt,
+      photoAt: userAvatar.updatedAt,
+    })
     .from(appUser)
     .leftJoin(office, eq(appUser.officeId, office.id))
+    .leftJoin(officeBranding, eq(officeBranding.officeId, appUser.officeId))
+    .leftJoin(userAvatar, eq(userAvatar.userId, appUser.id))
     .where(eq(appUser.id, result.user.id));
   if (!row || row.user.status === "deactivated") return null;
 
@@ -54,10 +66,12 @@ export async function actorFromHeaders(requestHeaders: Headers): Promise<Actor |
     id: user.id,
     name: user.name,
     email: user.email,
-    image: user.image,
+    image: row.photoAt ? `/api/images/avatar/${user.id}?v=${row.photoAt.getTime()}` : null,
     role: user.role,
     officeId: user.officeId,
     officeName: row.officeName,
+    workspaceName: row.workspaceName,
+    logoUrl: row.logoType && row.brandingAt ? `/api/images/logo/${user.officeId}?v=${row.brandingAt.getTime()}` : null,
     permissions: effectivePermissions(user.role, grants),
     preferences: user.preferences,
   };

@@ -71,6 +71,20 @@
       "when": 1793630491637,
       "tag": "0009_fields_and_stock",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1793631233174,
+      "tag": "0010_branding",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1793631234638,
+      "tag": "0011_branding_security",
+      "breakpoints": true
     }
   ]
 }

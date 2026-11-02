@@ -35,6 +35,7 @@ export const CATALOG = {
   "monitor.all": entry(["developer"], "developer"),
   "announce.all": entry(["developer"], "developer"),
   "access.request": entry(["admin"], "admin"),
+  "workspace.manage": entry(["admin"], "admin"),
   "audit.read.office": entry(["admin"], "admin"),
   "audit.read.own": entry(["admin", "user"]),
   "monitor.office": entry(["admin"], "admin"),

@@ -119,6 +119,7 @@ Priority: **P0** is required for launch, **P1** follows soon after launch, **P2*
 | ORG-3 | Admins create user accounts for their own office only | P0 |
 | ORG-4 | Accounts have a status: invited, active, or deactivated. Accounts are never hard-deleted, so the audit trail stays complete | P0 |
 | ORG-5 | Profile pages show identity, role, office, last activity, and recent actions, to those allowed to view them | P0 |
+| ORG-7 | Admins set their office's workspace name and logo in Settings, and everyone can add a profile photo. Images are PNG, JPEG or WebP only | P1 |
 | ORG-6 | Moving a user to another office is a Developer action, is audited, and removes access to the old office immediately | P1 |
 
 ### 4.3 Permissions (FR-PERM)

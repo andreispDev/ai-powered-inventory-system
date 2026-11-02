@@ -36,6 +36,11 @@ export const grantEffectEnum = pgEnum("grant_effect", ["allow", "deny"]);
 export const itemStatusEnum = pgEnum("item_status", ["active", "in_repair", "retired", "lost"]);
 export const movementTypeEnum = pgEnum("movement_type", ["receive", "issue", "adjust", "return", "transfer_out", "transfer_in"]);
 
+const bytea = customType<{ data: Buffer; driverData: Buffer | Uint8Array }>({
+  dataType: () => "bytea",
+  fromDriver: (value) => Buffer.from(value),
+});
+
 const tsvector = customType<{ data: string }>({ dataType: () => "tsvector" });
 
 export const office = pgTable("office", {
@@ -456,3 +461,24 @@ export const permissionRequest = pgTable(
     uniqueIndex("permission_request_one_pending_idx").on(t.requesterId, t.permission).where(sql`${t.status} = 'pending'`),
   ],
 );
+
+/** An office's own name and logo, which its admins manage. */
+export const officeBranding = pgTable("office_branding", {
+  officeId: uuid("office_id")
+    .primaryKey()
+    .references(() => office.id),
+  workspaceName: text("workspace_name"),
+  logo: bytea("logo"),
+  logoType: text("logo_type"),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const userAvatar = pgTable("user_avatar", {
+  userId: uuid("user_id")
+    .primaryKey()
+    .references(() => appUser.id),
+  officeId: uuid("office_id").references(() => office.id),
+  image: bytea("image").notNull(),
+  imageType: text("image_type").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});

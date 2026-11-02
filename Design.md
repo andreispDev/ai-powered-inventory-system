@@ -367,6 +367,10 @@ The reusable set in `components/skeletons/`: KPI card, chart, table (matching ro
 
 ## 11. Key screens
 
+### Workspace branding
+
+Each office's admin sets a workspace name and logo in Settings. Everyone in that office sees them in the sidebar instead of the app name. The sign-in page stays generic, because the office isn't known yet.
+
 ### Dashboards
 
 ```text

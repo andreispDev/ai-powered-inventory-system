@@ -13,6 +13,8 @@ async function AuthenticatedShell({ children }: { children: ReactNode }) {
         image: actor.image,
         role: actor.role,
         officeName: actor.officeName,
+        workspaceName: actor.workspaceName,
+        logoUrl: actor.logoUrl,
         permissions: actor.permissions,
         preferences: actor.preferences,
       }}

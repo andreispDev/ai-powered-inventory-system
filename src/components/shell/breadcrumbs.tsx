@@ -35,25 +35,31 @@ const LABELS: Record<string, string> = {
 
 const isId = (segment: string) => /^[0-9a-f-]{36}$/.test(segment);
 
-export function Breadcrumbs() {
-  const pathname = usePathname();
+export function crumbsFor(pathname: string) {
   const segments = pathname.split("/").filter(Boolean);
-  const crumbs = segments
-    .map((segment, index) => ({
-      label: isId(segment) ? "Details" : LABELS[segment],
-      href: `/${segments.slice(0, index + 1).join("/")}`,
-    }))
-    // "console" only groups Developer pages, and has no page of its own.
-    .filter((crumb) => crumb.label);
+  return (
+    segments
+      .map((segment, index) => ({
+        label: isId(segment) ? "Details" : LABELS[segment],
+        href: `/${segments.slice(0, index + 1).join("/")}`,
+      }))
+      // "console" only groups Developer pages, and has no page of its own.
+      .filter((crumb) => crumb.label)
+  );
+}
+
+export function Breadcrumbs() {
+  const crumbs = crumbsFor(usePathname());
 
   if (crumbs.length === 0) return null;
   return (
-    <Breadcrumb className="hidden min-w-0 md:block">
+    <Breadcrumb className="min-w-0">
       <BreadcrumbList>
         {crumbs.map((crumb, index) => (
           <Fragment key={crumb.href}>
-            {index > 0 && <BreadcrumbSeparator />}
-            <BreadcrumbItem>
+            {/* Phones show only the current page, next to the back button. */}
+            {index > 0 && <BreadcrumbSeparator className="hidden md:block" />}
+            <BreadcrumbItem className={index === crumbs.length - 1 ? undefined : "hidden md:inline-flex"}>
               {index === crumbs.length - 1 ? (
                 <BreadcrumbPage>{crumb.label}</BreadcrumbPage>
               ) : (

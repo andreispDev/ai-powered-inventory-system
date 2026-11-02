@@ -108,6 +108,19 @@
   );
 }
 
+.welcome-banner {
+  background-image: linear-gradient(120deg, var(--primary), color-mix(in oklch, var(--primary) 72%, black));
+}
+
+/* Decorative circles in the banner corner, drawn in the banner's own text color. */
+.welcome-rings {
+  background-image:
+    radial-gradient(circle at 92% 10%, transparent 0 3.5rem, color-mix(in oklch, var(--primary-foreground) 12%, transparent) 3.5rem 3.6rem, transparent 3.6rem),
+    radial-gradient(circle at 92% 10%, transparent 0 7rem, color-mix(in oklch, var(--primary-foreground) 9%, transparent) 7rem 7.1rem, transparent 7.1rem),
+    radial-gradient(circle at 92% 10%, transparent 0 11rem, color-mix(in oklch, var(--primary-foreground) 6%, transparent) 11rem 11.1rem, transparent 11.1rem),
+    radial-gradient(24rem 14rem at 100% 0%, color-mix(in oklch, var(--primary-foreground) 14%, transparent), transparent);
+}
+
 .brand-mark {
   background-image: linear-gradient(145deg, var(--primary), color-mix(in oklch, var(--primary) 82%, black));
 }

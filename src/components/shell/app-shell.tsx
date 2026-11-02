@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import { OfflineBanner, ConnectionIndicator } from "@/components/connectivity/connectivity";
+import { BackButton } from "@/components/shell/back-button";
 import { Breadcrumbs } from "@/components/shell/breadcrumbs";
 import { CommandPalette } from "@/components/shell/command-palette";
 import { NotificationBell, UrgentBanner } from "@/components/shell/notifications";
@@ -53,6 +54,8 @@ export type ShellUser = {
   image: string | null;
   role: Role;
   officeName: string | null;
+  workspaceName: string | null;
+  logoUrl: string | null;
   permissions: Permission[];
   preferences: Record<string, unknown> | null;
 };
@@ -74,12 +77,17 @@ function AppSidebar({ user }: { user: ShellUser }) {
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild size="lg" tooltip="Inventory">
+            <SidebarMenuButton asChild size="lg" tooltip={user.workspaceName ?? "Inventory"}>
               <Link href="/dashboard">
-                <span className="brand-mark text-primary-foreground shadow-card flex size-8 shrink-0 items-center justify-center rounded-md">
-                  <Boxes className="size-4" aria-hidden />
+                <span className="brand-mark text-primary-foreground shadow-card flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-md">
+                  {user.logoUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={user.logoUrl} alt="" className="size-full bg-white object-contain" />
+                  ) : (
+                    <Boxes className="size-4" aria-hidden />
+                  )}
                 </span>
-                <span className="font-semibold">Inventory</span>
+                <span className="truncate font-semibold">{user.workspaceName ?? "Inventory"}</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -256,6 +264,7 @@ export function AppShell({ user, children }: { user: ShellUser; children: ReactN
       <SidebarInset>
         <header className="bg-background/90 shadow-card sticky top-0 z-10 flex h-14 items-center gap-2 border-b px-4 backdrop-blur">
           <SidebarTrigger aria-label="Toggle sidebar" />
+          <BackButton />
           <Breadcrumbs />
           <div className="ml-auto flex items-center gap-1">
             <CommandPalette permissions={user.permissions} />

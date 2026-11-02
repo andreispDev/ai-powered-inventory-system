@@ -3,6 +3,7 @@ import { and, eq, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/pglite";
 import { migrate } from "drizzle-orm/pglite/migrator";
 import { beforeAll, describe, expect, it } from "vitest";
+import { parseImage } from "@/modules/preferences/image";
 import * as schema from "@/server/db/schema";
 import {
   announcement,
@@ -391,5 +392,37 @@ describe("office directory", () => {
   it("shares office names and nothing more", async () => {
     const result = (await asApp(scopeA, (tx) => tx.execute(sql`select * from office_directory()`))) as unknown as { rows: Record<string, unknown>[] };
     expect(result.rows).toEqual(expect.arrayContaining([{ id: A, name: "Office A" }, { id: B, name: "Office B" }]));
+  });
+});
+
+describe("workspace branding and photos", () => {
+  const PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2]);
+
+  it("lets an office change only its own branding", async () => {
+    await asApp(scopeA, (tx) => tx.insert(schema.officeBranding).values({ officeId: A, workspaceName: "Alpha Hub", logo: PNG, logoType: "image/png" }));
+    await asApp(scopeB, async (tx) => expect(await tx.select().from(schema.officeBranding)).toEqual([]));
+    expect(await failure(asApp(scopeB, (tx) => tx.insert(schema.officeBranding).values({ officeId: A, workspaceName: "Hacked" })))).not.toBeNull();
+    await asApp(scopeB, (tx) => tx.update(schema.officeBranding).set({ workspaceName: "Hacked" }).where(eq(schema.officeBranding.officeId, A)));
+    const [row] = await db.select().from(schema.officeBranding).where(eq(schema.officeBranding.officeId, A));
+    expect(row.workspaceName).toBe("Alpha Hub");
+    expect(Buffer.compare(row.logo!, PNG)).toBe(0);
+  });
+
+  it("lets people change only their own photo, seen only within their office", async () => {
+    await asApp(scopeUserA, (tx) => tx.insert(schema.userAvatar).values({ userId: USER_A, officeId: A, image: PNG, imageType: "image/png" }));
+    await asApp(scopeA, async (tx) => expect(await tx.select().from(schema.userAvatar)).toHaveLength(1));
+    await asApp(scopeB, async (tx) => expect(await tx.select().from(schema.userAvatar)).toEqual([]));
+    expect(await failure(asApp(scopeA, (tx) => tx.insert(schema.userAvatar).values({ userId: USER_A, officeId: A, image: PNG, imageType: "image/png" })))).not.toBeNull();
+    await asApp(scopeA, (tx) => tx.delete(schema.userAvatar));
+    expect(await db.select().from(schema.userAvatar)).toHaveLength(1);
+  });
+
+  it("accepts only real images of a safe type and size", () => {
+    expect("bytes" in parseImage(PNG.toString("base64"))).toBe(true);
+    expect("bytes" in parseImage(Buffer.from([0xff, 0xd8, 0xff, 0xe0]).toString("base64"))).toBe(true);
+    expect(parseImage(Buffer.from("<svg onload=alert(1)>").toString("base64"))).toHaveProperty("error");
+    expect(parseImage(Buffer.from("<html><script>").toString("base64"))).toHaveProperty("error");
+    expect(parseImage("")).toHaveProperty("error");
+    expect(parseImage(Buffer.concat([PNG, Buffer.alloc(500 * 1024)]).toString("base64"))).toHaveProperty("error");
   });
 });

@@ -1,34 +1,35 @@
+import { eq } from "drizzle-orm";
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { PageContainer, PageHeader, PageSkeleton } from "@/components/shell/page";
-import { Card, CardContent } from "@/components/ui/card";
+import { PageContainer, PageSkeleton } from "@/components/shell/page";
+import { MyPhotoControl } from "@/modules/accounts/my-photo";
+import { loadProfileActivity, ProfilePhoto, ProfileView } from "@/modules/accounts/profile-view";
 import { requireActor } from "@/server/auth/session";
+import { appUser } from "@/server/db/schema";
+import { readScoped } from "@/server/guard/read";
 
 export const metadata: Metadata = { title: "Profile" };
 
 async function Content() {
   const actor = await requireActor();
-  const rows = [
-    ["Name", actor.name],
-    ["Email", actor.email],
-    ["Role", actor.role[0].toUpperCase() + actor.role.slice(1)],
-    ["Office", actor.officeName ?? "All offices"],
-  ];
+  const data = await readScoped(actor, async (tx) => {
+    const [row] = await tx.select({ status: appUser.status, createdAt: appUser.createdAt }).from(appUser).where(eq(appUser.id, actor.id));
+    return { row, activity: await loadProfileActivity(tx, actor.id) };
+  });
   return (
-    <PageContainer width="narrow">
-      <PageHeader title="Profile" description="Your account details." />
-      <Card>
-        <CardContent>
-          <dl className="divide-y text-sm">
-            {rows.map(([label, value]) => (
-              <div key={label} className="flex justify-between gap-4 py-3">
-                <dt className="text-muted-foreground">{label}</dt>
-                <dd className="truncate font-medium">{value}</dd>
-              </div>
-            ))}
-          </dl>
-        </CardContent>
-      </Card>
+    <PageContainer>
+      <ProfileView
+        name={actor.name}
+        email={actor.email}
+        role={actor.role}
+        status={data.row.status}
+        officeName={actor.officeName}
+        memberSince={data.row.createdAt}
+        permissionCount={actor.permissions.length}
+        photo={<ProfilePhoto name={actor.name} url={actor.image} />}
+        actions={<MyPhotoControl hasPhoto={!!actor.image} />}
+        activity={data.activity}
+      />
     </PageContainer>
   );
 }
