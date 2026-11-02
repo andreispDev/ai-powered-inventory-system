@@ -7,7 +7,7 @@ import { AccessDenied } from "@/components/feedback/access-denied";
 import { PageContainer, PageHeader, PageSkeleton } from "@/components/shell/page";
 import { listFields } from "@/modules/categories/queries";
 import { ItemForm } from "@/modules/inventory/item-form";
-import { listPeople } from "@/modules/inventory/queries";
+import { listItemNames, listPeople } from "@/modules/inventory/queries";
 import { requireActor } from "@/server/auth/session";
 import { category, item } from "@/server/db/schema";
 import { readScoped } from "@/server/guard/read";
@@ -26,7 +26,7 @@ async function Content({ params }: Props) {
     const [row] = await tx.select().from(item).where(eq(item.id, itemId));
     if (!row || row.deletedAt) return null;
     const [parent] = await tx.select({ disabledFields: category.disabledFields, kind: category.kind }).from(category).where(eq(category.id, row.categoryId));
-    return { row, records: parent?.kind === "records", disabledFields: parent?.disabledFields ?? [], fields: await listFields(tx, row.categoryId), people: await listPeople(tx) };
+    return { row, records: parent?.kind === "records", savedNames: await listItemNames(tx, parent?.kind ?? "stock"), disabledFields: parent?.disabledFields ?? [], fields: await listFields(tx, row.categoryId), people: await listPeople(tx) };
   });
   if (!data) notFound();
 
@@ -40,6 +40,7 @@ async function Content({ params }: Props) {
         people={data.people}
         disabledFields={data.disabledFields}
         records={data.records}
+        savedNames={data.savedNames}
         item={{
           id: row.id,
           version: row.version,

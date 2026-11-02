@@ -131,6 +131,15 @@ export async function countMovements(tx: ScopedTx, itemId: string) {
   return total;
 }
 
+/** Names already saved, for suggestions while typing. RLS keeps them to this office. */
+export const listItemNames = (tx: ScopedTx, kind: CategoryKind) =>
+  tx
+    .select({ id: item.id, name: item.name })
+    .from(item)
+    .where(and(isNull(item.deletedAt), itemIsKind(kind)))
+    .orderBy(asc(item.name))
+    .limit(1000);
+
 export const listAttachments = (tx: ScopedTx, itemId: string) =>
   tx
     .select({

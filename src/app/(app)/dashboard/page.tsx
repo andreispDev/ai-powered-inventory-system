@@ -1,5 +1,5 @@
 import { count, desc, eq, isNull, sql } from "drizzle-orm";
-import { AlertTriangle, Banknote, Boxes, Building2, FolderTree, History, PackageCheck, PackageX, PieChart, TrendingUp, Users, Zap } from "lucide-react";
+import { FileText, AlertTriangle, Banknote, Boxes, Building2, FolderTree, History, PackageCheck, PackageX, PieChart, TrendingUp, Users, Zap } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
@@ -107,7 +107,7 @@ async function Content() {
           ) : undefined
         }
         actions={[
-          ...(can("item.create") ? [{ label: "Add item", href: "/inventory/new" }] : []),
+          ...(can("item.create") ? [{ label: "Add item", href: "/inventory/new" }, { label: "Add record", href: "/records/new" }] : []),
           ...(can("office.manage") ? [{ label: "Offices", href: "/console/offices" }] : []),
           ...(can("monitor.office") || can("monitor.all") ? [{ label: "Live monitor", href: "/monitor" }] : []),
           { label: "My profile", href: "/profile" },
@@ -256,6 +256,12 @@ async function Content() {
                 <Link href="/inventory/new">
                   <Boxes aria-hidden />
                   Add item
+                </Link>
+              </Button>
+              <Button variant="outline" asChild>
+                <Link href="/records/new">
+                  <FileText aria-hidden />
+                  Add record
                 </Link>
               </Button>
               <Button variant="outline" asChild>

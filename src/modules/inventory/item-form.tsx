@@ -1,6 +1,7 @@
 "use client";
 
 import { Activity, Banknote, Barcode, CalendarDays, CircleDot, FileText, Fingerprint, FolderTree, Hash, type LucideIcon, MapPin, Package, Ruler, ShieldCheck, StickyNote, Truck } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
@@ -13,6 +14,7 @@ import { useSubmit } from "@/hooks/use-submit";
 import type { FieldDef } from "@/modules/categories/field-schema";
 import { createItem, updateItem } from "./actions";
 import { DynamicField } from "./dynamic-field";
+import { NameCombobox } from "./name-combobox";
 import { ITEM_STATUSES } from "./schemas";
 
 type Status = (typeof ITEM_STATUSES)[number]["value"];
@@ -42,6 +44,7 @@ export function ItemForm({
   item,
   disabledFields = [],
   records = false,
+  savedNames = [],
 }: {
   categoryId: string;
   fields: readonly FieldDef[];
@@ -49,6 +52,8 @@ export function ItemForm({
   item?: ItemFormValues;
   disabledFields?: readonly string[];
   records?: boolean;
+  /** Other items of this kind, to suggest while typing a name */
+  savedNames?: readonly { id: string; name: string }[];
 }) {
   const router = useRouter();
   const create = useSubmit(createItem);
@@ -82,6 +87,9 @@ export function ItemForm({
     router.push(`/${records ? "records" : "inventory"}/${result.data.id}`);
   }
 
+  const others = savedNames.filter((other) => other.id !== item?.id);
+  const sameName = others.find((other) => other.name.toLowerCase() === values.name.trim().toLowerCase());
+
   const text = (name: keyof typeof values, label: string, icon: LucideIcon, extra?: { required?: boolean; type?: string; help?: string }) =>
     disabledFields.includes(name) ? null : (
     <FormField id={name} label={label} icon={icon} required={extra?.required} help={extra?.help} errors={state.fieldErrors[name]}>
@@ -105,7 +113,20 @@ export function ItemForm({
           <CardDescription>{records ? "The basics of this record." : "The standard information every item has."}</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2">
-          <div className="sm:col-span-2">{text("name", "Name", Package, { required: true })}</div>
+          <div className="sm:col-span-2">
+            <FormField id="name" label="Name" icon={Package} required errors={state.fieldErrors.name}>
+              <NameCombobox id="name" value={values.name} names={[...new Set(others.map((other) => other.name))]} onChange={(name) => setValues({ ...values, name })} />
+            </FormField>
+            {sameName && (
+              <p className="text-muted-foreground mt-1.5 text-xs">
+                This name already exists.{" "}
+                <Link href={`/${records ? "records" : "inventory"}/${sameName.id}`} className="text-primary font-medium hover:underline">
+                  Open it
+                </Link>{" "}
+                {records ? "or save to add another record." : "to move its stock, or save to add a separate item."}
+              </p>
+            )}
+          </div>
           {text("sku", records ? "Reference number" : "SKU or code", Barcode)}
           {!records && (
           <FormField id="status" label="Status" icon={CircleDot} errors={state.fieldErrors.status}>

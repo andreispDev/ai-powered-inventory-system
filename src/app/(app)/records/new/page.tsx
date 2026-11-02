@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { param, type SearchParams } from "@/lib/pagination";
 import { getCategory, listCategories, listFields } from "@/modules/categories/queries";
 import { ItemForm } from "@/modules/inventory/item-form";
-import { listPeople } from "@/modules/inventory/queries";
+import { listItemNames, listPeople } from "@/modules/inventory/queries";
 import { requireActor } from "@/server/auth/session";
 import { readScoped } from "@/server/guard/read";
 
@@ -26,7 +26,7 @@ async function Content({ searchParams }: Props) {
     const data = await readScoped(actor, async (tx) => {
       const row = await getCategory(tx, categoryId);
       if (!row || row.archivedAt || row.kind !== "records") return null;
-      return { row, fields: await listFields(tx, categoryId), people: await listPeople(tx) };
+      return { row, fields: await listFields(tx, categoryId), people: await listPeople(tx), savedNames: await listItemNames(tx, "records") };
     });
     if (data) {
       return (
@@ -37,6 +37,7 @@ async function Content({ searchParams }: Props) {
             categoryId={data.row.id}
             fields={data.fields.map(({ key, label, type, config }) => ({ key, label, type, config }))}
             people={data.people}
+            savedNames={data.savedNames}
             disabledFields={data.row.disabledFields}
           />
         </PageContainer>
