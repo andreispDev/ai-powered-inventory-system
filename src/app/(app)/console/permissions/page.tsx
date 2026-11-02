@@ -1,3 +1,4 @@
+import { Inbox } from "lucide-react";
 import { asc, desc, eq, or, sql } from "drizzle-orm";
 import type { Metadata } from "next";
 import { Suspense } from "react";
@@ -94,7 +95,7 @@ async function Content({ searchParams }: Props) {
       {data.requests.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Waiting for your answer ({data.requests.length})</CardTitle>
+            <CardTitle icon={Inbox}>Waiting for your answer ({data.requests.length})</CardTitle>
           </CardHeader>
           <CardContent>
             <ul className="divide-y text-sm">

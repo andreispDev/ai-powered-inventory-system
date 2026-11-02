@@ -1,5 +1,6 @@
 "use client";
 
+import { Palette, Scaling, SunMoon, Type } from "lucide-react";
 import { useAppearance } from "@/components/providers/appearance-provider";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,7 +21,7 @@ export function AppearanceSettings() {
     <>
       <Card>
         <CardHeader>
-          <CardTitle>Mode</CardTitle>
+          <CardTitle icon={SunMoon}>Mode</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-2">
           {MODES.map((m) => (
@@ -38,7 +39,7 @@ export function AppearanceSettings() {
 
       <Card>
         <CardHeader>
-          <CardTitle>UI scale</CardTitle>
+          <CardTitle icon={Scaling}>UI scale</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-2">
           {SCALES.map((s) => (
@@ -56,7 +57,7 @@ export function AppearanceSettings() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Font</CardTitle>
+          <CardTitle icon={Type}>Font</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-2 sm:grid-cols-3">
           {FONTS.map((f) => (
@@ -80,7 +81,7 @@ export function AppearanceSettings() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Color theme</CardTitle>
+          <CardTitle icon={Palette}>Color theme</CardTitle>
         </CardHeader>
         <CardContent className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           {THEMES.map((t) => (

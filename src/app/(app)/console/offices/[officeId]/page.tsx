@@ -1,3 +1,4 @@
+import { Building2, UserPlus, Users } from "lucide-react";
 import { asc, eq } from "drizzle-orm";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -50,7 +51,7 @@ async function Content({ params }: Props) {
       <div className="grid items-start gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Office profile</CardTitle>
+            <CardTitle icon={Building2}>Office profile</CardTitle>
           </CardHeader>
           <CardContent>
             <OfficeForm office={data.row} />
@@ -59,7 +60,7 @@ async function Content({ params }: Props) {
         <div className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>People</CardTitle>
+              <CardTitle icon={Users}>People</CardTitle>
             </CardHeader>
             <CardContent>
               {data.people.length === 0 ? (
@@ -86,7 +87,7 @@ async function Content({ params }: Props) {
           {!archived && (
             <Card>
               <CardHeader>
-                <CardTitle>Add a person</CardTitle>
+                <CardTitle icon={UserPlus}>Add a person</CardTitle>
               </CardHeader>
               <CardContent>
                 <AccountForm canCreateAdmin fixedOfficeId={data.row.id} defaultRole="admin" onDone="stay" />

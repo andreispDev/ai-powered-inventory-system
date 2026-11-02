@@ -1,5 +1,5 @@
 import { and, desc, eq, sql } from "drizzle-orm";
-import { UserRound } from "lucide-react";
+import { ArrowLeftRight, FileText, History, TrendingUp, UserCheck, UserRound } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -120,7 +120,7 @@ async function Content({ params }: Props) {
       {data.prediction && !deleted && (
         <Card>
           <CardHeader className="flex flex-wrap items-center justify-between gap-2">
-            <CardTitle>Prediction</CardTitle>
+            <CardTitle icon={TrendingUp}>Prediction</CardTitle>
             <ForecastBadge state={data.prediction.state} confidence={data.prediction.confidence} />
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
@@ -176,7 +176,7 @@ async function Content({ params }: Props) {
 
       <Card>
         <CardHeader>
-          <CardTitle>Details</CardTitle>
+          <CardTitle icon={FileText}>Details</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <Detail
@@ -199,7 +199,7 @@ async function Content({ params }: Props) {
 
       <Card className="gap-3">
         <CardHeader>
-          <CardTitle>Custody</CardTitle>
+          <CardTitle icon={UserCheck}>Custody</CardTitle>
         </CardHeader>
         <CardContent>
           {data.assignments.length === 0 ? (
@@ -230,7 +230,7 @@ async function Content({ params }: Props) {
 
       <Card className="gap-3">
         <CardHeader>
-          <CardTitle>Stock history</CardTitle>
+          <CardTitle icon={ArrowLeftRight}>Stock history</CardTitle>
         </CardHeader>
         <CardContent>
           {data.movements.length === 0 ? (
@@ -279,7 +279,7 @@ async function Content({ params }: Props) {
 
       <Card className="gap-3">
         <CardHeader>
-          <CardTitle>Activity</CardTitle>
+          <CardTitle icon={History}>Activity</CardTitle>
         </CardHeader>
         <CardContent>
           {data.activity.length === 0 ? (

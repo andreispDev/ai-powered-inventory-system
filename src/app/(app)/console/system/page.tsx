@@ -1,6 +1,6 @@
 import { Queue } from "bullmq";
 import { count, desc, eq, isNull, sql } from "drizzle-orm";
-import { CircleCheck, CircleX } from "lucide-react";
+import { AlertTriangle, CheckCircle2, CircleCheck, CircleX, History, ListChecks } from "lucide-react";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { AccessDenied } from "@/components/feedback/access-denied";
@@ -25,7 +25,7 @@ function Status({ label, ok, detail }: { label: string; ok: boolean; detail: str
           <Icon className={`size-4 ${ok ? "text-success" : "text-destructive"}`} aria-hidden />
           {label}
         </CardDescription>
-        <CardTitle>{ok ? "Working" : "Problem"}</CardTitle>
+        <CardTitle icon={ok ? CheckCircle2 : AlertTriangle}>{ok ? "Working" : "Problem"}</CardTitle>
         <p className="text-muted-foreground text-xs">{detail}</p>
       </CardHeader>
     </Card>
@@ -87,7 +87,7 @@ async function Content() {
       <div className="grid items-start gap-6 lg:grid-cols-[1fr_2fr]">
         <Card>
           <CardHeader>
-            <CardTitle>Job queue</CardTitle>
+            <CardTitle icon={ListChecks}>Job queue</CardTitle>
           </CardHeader>
           <CardContent>
             {counts ? (
@@ -106,7 +106,7 @@ async function Content() {
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>Recent jobs</CardTitle>
+            <CardTitle icon={History}>Recent jobs</CardTitle>
             <CardDescription>{db.failures} failed in total</CardDescription>
           </CardHeader>
           <CardContent>

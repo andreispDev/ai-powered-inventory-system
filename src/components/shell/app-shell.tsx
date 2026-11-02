@@ -1,12 +1,10 @@
 "use client";
 
-import { Boxes, LogOut, Monitor, Moon, Palette, Settings, Sun, User } from "lucide-react";
+import { Boxes, Code2, LogOut, Monitor, Moon, Palette, Settings, ShieldCheck, Sun, User, UserRound, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
-import { OfflineBanner, ConnectionIndicator } from "@/components/connectivity/connectivity";
-import { BackButton } from "@/components/shell/back-button";
-import { Breadcrumbs } from "@/components/shell/breadcrumbs";
+import { OfflineBanner } from "@/components/connectivity/connectivity";
 import { CommandPalette } from "@/components/shell/command-palette";
 import { NotificationBell, UrgentBanner } from "@/components/shell/notifications";
 import { RealtimeProvider } from "@/components/providers/realtime-provider";
@@ -61,6 +59,7 @@ export type ShellUser = {
 };
 
 const ROLE_LABEL: Record<Role, string> = { developer: "Developer", admin: "Admin", user: "User" };
+const ROLE_ICON: Record<Role, LucideIcon> = { developer: Code2, admin: ShieldCheck, user: UserRound };
 
 const initials = (name: string) =>
   name
@@ -197,6 +196,7 @@ function AppearanceMenu() {
 
 function UserMenu({ user }: { user: ShellUser }) {
   const [confirmingSignOut, setConfirmingSignOut] = useState(false);
+  const RoleIcon = ROLE_ICON[user.role];
   return (
     <>
     <Confirm
@@ -217,7 +217,16 @@ function UserMenu({ user }: { user: ShellUser }) {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-60">
-        <DropdownMenuLabel className="text-sm font-medium">{ROLE_LABEL[user.role]}</DropdownMenuLabel>
+        <div className="welcome-banner welcome-hero text-primary-foreground -mx-1 -mt-1 mb-1 flex items-center gap-3 rounded-t-[inherit] px-3 py-3">
+          <Avatar className="ring-primary-foreground/40 size-10 ring-2">
+            {user.image && <AvatarImage src={user.image} alt="" />}
+            <AvatarFallback className="text-foreground text-sm">{initials(user.name)}</AvatarFallback>
+          </Avatar>
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-black/25 px-2.5 py-1 text-sm font-medium">
+            <RoleIcon className="size-3.5" aria-hidden />
+            {ROLE_LABEL[user.role]}
+          </span>
+        </div>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
           <Link href="/profile">
@@ -257,11 +266,8 @@ export function AppShell({ user, children }: { user: ShellUser; children: ReactN
       <SidebarInset>
         <header className="bg-background/90 shadow-card sticky top-0 z-10 flex h-14 items-center gap-2 border-b px-4 backdrop-blur">
           <SidebarTrigger aria-label="Toggle sidebar" />
-          <BackButton />
-          <Breadcrumbs />
           <div className="ml-auto flex items-center gap-1">
             <CommandPalette permissions={user.permissions} />
-            <ConnectionIndicator />
             <NotificationBell />
             <AppearanceMenu />
             <UserMenu user={user} />

@@ -1,4 +1,4 @@
-import { CalendarClock, Eye, History, PackagePlus, Snail, TrendingUp } from "lucide-react";
+import { CalendarClock, Eye, History, PackagePlus, Snail, Target, TrendingUp } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
@@ -118,7 +118,7 @@ async function Content({ searchParams }: Props) {
           {isDeveloper && accuracy.length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle>Forecast accuracy by office</CardTitle>
+                <CardTitle icon={Target}>Forecast accuracy by office</CardTitle>
               </CardHeader>
               <CardContent>
                 <Table>

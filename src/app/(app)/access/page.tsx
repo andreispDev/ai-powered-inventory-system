@@ -1,3 +1,4 @@
+import { ClipboardList, KeyRound, ShieldCheck } from "lucide-react";
 import { desc } from "drizzle-orm";
 import type { Metadata } from "next";
 import { Suspense } from "react";
@@ -30,7 +31,7 @@ async function Content() {
         <div className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Ask for access</CardTitle>
+              <CardTitle icon={KeyRound}>Ask for access</CardTitle>
               <CardDescription>A Developer reviews your request, and you&apos;re notified of the answer.</CardDescription>
             </CardHeader>
             <CardContent>
@@ -39,7 +40,7 @@ async function Content() {
           </Card>
           <Card>
             <CardHeader>
-              <CardTitle>Your requests</CardTitle>
+              <CardTitle icon={ClipboardList}>Your requests</CardTitle>
             </CardHeader>
             <CardContent>
               {requests.length === 0 ? (
@@ -66,7 +67,7 @@ async function Content() {
         </div>
         <Card>
           <CardHeader>
-            <CardTitle>What you can do now</CardTitle>
+            <CardTitle icon={ShieldCheck}>What you can do now</CardTitle>
             <CardDescription>{actor.permissions.length} permissions</CardDescription>
           </CardHeader>
           <CardContent>

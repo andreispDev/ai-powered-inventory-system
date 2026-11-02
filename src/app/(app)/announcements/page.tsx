@@ -38,7 +38,7 @@ async function Content() {
       <div className="grid items-start gap-6 lg:grid-cols-[2fr_3fr]">
         <Card>
           <CardHeader>
-            <CardTitle>New announcement</CardTitle>
+            <CardTitle icon={Megaphone}>New announcement</CardTitle>
           </CardHeader>
           <CardContent>
             <AnnouncementForm global={global} offices={data.offices} officeName={actor.officeName} />

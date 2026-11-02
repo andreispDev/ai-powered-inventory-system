@@ -76,19 +76,6 @@ export function useConnection(): Connection {
   );
 }
 
-const LABEL: Record<Connection, string> = { online: "Live", offline: "Offline", unreachable: "Reconnecting" };
-
-export function ConnectionIndicator() {
-  const connection = useConnection();
-  const online = connection === "online";
-  return (
-    <span className="text-muted-foreground mr-1 flex items-center gap-1.5 text-xs" role="status">
-      <span aria-hidden className={`size-2 rounded-full ${online ? "bg-success" : "bg-warning"}`} />
-      {LABEL[connection]}
-    </span>
-  );
-}
-
 export function OfflineBanner() {
   const connection = useConnection();
   const wasDown = useRef(false);

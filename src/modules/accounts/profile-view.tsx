@@ -1,20 +1,4 @@
-import {
-  ArrowLeftRight,
-  Boxes,
-  Building2,
-  CalendarDays,
-  CircleDot,
-  FolderTree,
-  History,
-  KeyRound,
-  type LucideIcon,
-  Mail,
-  Megaphone,
-  PackageCheck,
-  Shield,
-  UserCheck,
-  UserRound,
-} from "lucide-react";
+import { ArrowLeftRight, Boxes, Building2, CalendarDays, CircleDot, FolderTree, History, KeyRound, type LucideIcon, Mail, Megaphone, PackageCheck, Shield, UserCheck, UserRound } from "lucide-react";
 import { and, count, desc, eq, gte, isNull } from "drizzle-orm";
 import type { ReactNode } from "react";
 import { LocalTime } from "@/components/shell/local-time";
@@ -142,7 +126,7 @@ export function ProfileView({
       <div className="grid items-start gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>About</CardTitle>
+            <CardTitle icon={UserRound}>About</CardTitle>
           </CardHeader>
           <CardContent>
             <dl className="divide-y text-sm">
@@ -160,7 +144,7 @@ export function ProfileView({
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>Recent activity</CardTitle>
+            <CardTitle icon={History}>Recent activity</CardTitle>
           </CardHeader>
           <CardContent>
             {activity.recent.length === 0 ? (

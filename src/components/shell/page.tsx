@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { PageTrail } from "@/components/shell/breadcrumbs";
 
 const WIDTHS = {
   narrow: "max-w-[var(--content-narrow)]",
@@ -18,7 +19,12 @@ export function PageContainer({
   width?: keyof typeof WIDTHS;
   children: ReactNode;
 }) {
-  return <div className={cn("mx-auto w-full space-y-6", WIDTHS[width])}>{children}</div>;
+  return (
+    <div className={cn("mx-auto w-full space-y-6", WIDTHS[width])}>
+      <PageTrail />
+      {children}
+    </div>
+  );
 }
 
 export function PageHeader({

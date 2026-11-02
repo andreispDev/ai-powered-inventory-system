@@ -1,5 +1,6 @@
 "use client";
 
+import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Fragment } from "react";
@@ -11,6 +12,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
+import { Button } from "@/components/ui/button";
 
 const LABELS: Record<string, string> = {
   dashboard: "Dashboard",
@@ -49,29 +51,37 @@ export function crumbsFor(pathname: string) {
   return segments[0] === "dashboard" ? crumbs : [{ label: LABELS.dashboard, href: "/dashboard" }, ...crumbs];
 }
 
-export function Breadcrumbs() {
+/** The back button and trail at the top of a page's content. The dashboard is home, so it has neither. */
+export function PageTrail() {
   const crumbs = crumbsFor(usePathname());
-
-  if (crumbs.length === 0) return null;
+  const parent = crumbs.at(-2);
+  if (!parent) return null;
   return (
-    <Breadcrumb className="min-w-0">
-      <BreadcrumbList>
-        {crumbs.map((crumb, index) => (
-          <Fragment key={crumb.href}>
-            {/* Phones show only the current page, next to the back button. */}
-            {index > 0 && <BreadcrumbSeparator className="hidden md:block" />}
-            <BreadcrumbItem className={index === crumbs.length - 1 ? undefined : "hidden md:inline-flex"}>
-              {index === crumbs.length - 1 ? (
-                <BreadcrumbPage>{crumb.label}</BreadcrumbPage>
-              ) : (
-                <BreadcrumbLink asChild>
-                  <Link href={crumb.href}>{crumb.label}</Link>
-                </BreadcrumbLink>
-              )}
-            </BreadcrumbItem>
-          </Fragment>
-        ))}
-      </BreadcrumbList>
-    </Breadcrumb>
+    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+      <Button variant="ghost" size="sm" className="-ml-2" asChild>
+        <Link href={parent.href} aria-label={`Back to ${parent.label}`} title={`Back to ${parent.label}`}>
+          <ArrowLeft aria-hidden />
+          Back
+        </Link>
+      </Button>
+      <Breadcrumb className="min-w-0">
+        <BreadcrumbList>
+          {crumbs.map((crumb, index) => (
+            <Fragment key={crumb.href}>
+              {index > 0 && <BreadcrumbSeparator />}
+              <BreadcrumbItem>
+                {index === crumbs.length - 1 ? (
+                  <BreadcrumbPage>{crumb.label}</BreadcrumbPage>
+                ) : (
+                  <BreadcrumbLink asChild>
+                    <Link href={crumb.href}>{crumb.label}</Link>
+                  </BreadcrumbLink>
+                )}
+              </BreadcrumbItem>
+            </Fragment>
+          ))}
+        </BreadcrumbList>
+      </Breadcrumb>
+    </div>
   );
 }

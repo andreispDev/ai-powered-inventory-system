@@ -1,5 +1,5 @@
 import { count, desc, eq, isNull, sql } from "drizzle-orm";
-import { AlertTriangle, Banknote, Boxes, Building2, FolderTree, PackageX, Users } from "lucide-react";
+import { AlertTriangle, Banknote, Boxes, Building2, FolderTree, History, PackageCheck, PackageX, PieChart, TrendingUp, Users, Zap } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
@@ -124,7 +124,7 @@ async function Content() {
       <div className="grid gap-6 lg:grid-cols-3">
         <Card>
           <CardHeader>
-            <CardTitle>Items by status</CardTitle>
+            <CardTitle icon={PieChart}>Items by status</CardTitle>
           </CardHeader>
           <CardContent>
             <DonutChart
@@ -139,7 +139,7 @@ async function Content() {
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>{actor.role === "developer" ? "Items by office" : "Items by category"}</CardTitle>
+            <CardTitle icon={FolderTree}>{actor.role === "developer" ? "Items by office" : "Items by category"}</CardTitle>
           </CardHeader>
           <CardContent>
             <DonutChart
@@ -151,7 +151,7 @@ async function Content() {
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>Stock availability</CardTitle>
+            <CardTitle icon={PackageCheck}>Stock availability</CardTitle>
           </CardHeader>
           <CardContent>
             <DonutChart
@@ -169,7 +169,7 @@ async function Content() {
       {data.stockouts.length > 0 && (
         <Card>
           <CardHeader className="flex items-center justify-between gap-2">
-            <CardTitle>Predicted to run out</CardTitle>
+            <CardTitle icon={TrendingUp}>Predicted to run out</CardTitle>
             <Link href="/predictions" className="text-muted-foreground text-sm hover:underline">
               All predictions
             </Link>
@@ -195,10 +195,7 @@ async function Content() {
       <div className="grid items-start gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <AlertTriangle className="text-warning size-4" aria-hidden />
-              Needs attention
-            </CardTitle>
+            <CardTitle icon={AlertTriangle}>Needs attention</CardTitle>
           </CardHeader>
           <CardContent>
             {data.outOfStock.length === 0 ? (
@@ -221,7 +218,7 @@ async function Content() {
         {data.showActivity && (
           <Card>
             <CardHeader>
-              <CardTitle>Recent activity</CardTitle>
+              <CardTitle icon={History}>Recent activity</CardTitle>
             </CardHeader>
             <CardContent>
               {data.activity.length === 0 ? (
@@ -247,7 +244,7 @@ async function Content() {
         {!data.showActivity && can("item.create") && (
           <Card>
             <CardHeader>
-              <CardTitle>Quick actions</CardTitle>
+              <CardTitle icon={Zap}>Quick actions</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-wrap gap-2">
               <Button asChild>

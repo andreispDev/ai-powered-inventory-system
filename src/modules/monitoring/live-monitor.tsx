@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRealtime } from "@/components/providers/realtime-provider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardTitleIcon } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 
 export type FeedRow = {
@@ -76,7 +76,7 @@ export function LiveMonitor({ initial }: { initial: FeedRow[] }) {
         <CardHeader>
           <CardTitle className="flex flex-wrap items-center justify-between gap-2">
             <span className="flex items-center gap-2">
-              <Activity className="size-4" aria-hidden />
+              <CardTitleIcon icon={Activity} />
               Activity
               <Badge variant={live ? "secondary" : "outline"}>{live ? "Live" : "Connecting"}</Badge>
             </span>
@@ -116,8 +116,7 @@ export function LiveMonitor({ initial }: { initial: FeedRow[] }) {
       </Card>
       <Card className="gap-3">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Users className="size-4" aria-hidden />
+          <CardTitle icon={Users}>
             Online now
             {people && <Badge variant="secondary">{people.length}</Badge>}
           </CardTitle>

@@ -28,7 +28,7 @@ export function WorkspaceSettings({ name, logoUrl }: { name: string | null; logo
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Workspace</CardTitle>
+        <CardTitle icon={Building2}>Workspace</CardTitle>
         <CardDescription>Everyone in your office sees this name and logo in the sidebar.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-5">

@@ -1,3 +1,4 @@
+import type { LucideIcon } from "lucide-react"
 import * as React from "react"
 import { cn } from "cn"
 
@@ -32,16 +33,28 @@ function CardHeader({ className, ...props }: React.ComponentProps<"div">) {
   )
 }
 
-function CardTitle({ className, ...props }: React.ComponentProps<"div">) {
+function CardTitleIcon({ icon: Icon }: { icon: LucideIcon }) {
+  return (
+    <span className="bg-primary/10 text-primary flex size-7 shrink-0 items-center justify-center rounded-lg">
+      <Icon className="size-4" aria-hidden />
+    </span>
+  )
+}
+
+function CardTitle({ className, icon, children, ...props }: React.ComponentProps<"div"> & { icon?: LucideIcon }) {
   return (
     <div
       data-slot="card-title"
       className={cn(
         "font-heading text-base leading-snug font-medium group-data-[size=sm]/card:text-sm",
+        icon && "flex items-center gap-2",
         className
       )}
       {...props}
-    />
+    >
+      {icon && <CardTitleIcon icon={icon} />}
+      {children}
+    </div>
   )
 }
 
@@ -96,6 +109,7 @@ export {
   CardHeader,
   CardFooter,
   CardTitle,
+  CardTitleIcon,
   CardAction,
   CardDescription,
   CardContent,

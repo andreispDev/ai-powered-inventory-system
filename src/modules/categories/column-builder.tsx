@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowDown, ArrowUp, Pencil, RotateCcw, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Columns3, Pencil, Plus, RotateCcw, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
@@ -224,7 +224,7 @@ export function ColumnBuilder({ categoryId, fields, canEdit }: { categoryId: str
     <div className="grid items-start gap-6 lg:grid-cols-[3fr_2fr]">
       <Card>
         <CardHeader>
-          <CardTitle>Custom columns</CardTitle>
+          <CardTitle icon={Columns3}>Custom columns</CardTitle>
         </CardHeader>
         <CardContent>
           {fields.length === 0 ? (
@@ -248,7 +248,7 @@ export function ColumnBuilder({ categoryId, fields, canEdit }: { categoryId: str
       {canEdit && (
         <Card>
           <CardHeader>
-            <CardTitle>Add a column</CardTitle>
+            <CardTitle icon={Plus}>Add a column</CardTitle>
           </CardHeader>
           <CardContent>
             <FieldEditor categoryId={categoryId} />

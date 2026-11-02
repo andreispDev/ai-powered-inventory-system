@@ -1,21 +1,6 @@
 "use client";
 
-import {
-  Activity,
-  Banknote,
-  Barcode,
-  CalendarDays,
-  CircleDot,
-  Fingerprint,
-  Hash,
-  type LucideIcon,
-  MapPin,
-  Package,
-  Ruler,
-  ShieldCheck,
-  StickyNote,
-  Truck,
-} from "lucide-react";
+import { Activity, Banknote, Barcode, CalendarDays, CircleDot, FileText, Fingerprint, FolderTree, Hash, type LucideIcon, MapPin, Package, Ruler, ShieldCheck, StickyNote, Truck } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
@@ -114,7 +99,7 @@ export function ItemForm({
     <form onSubmit={onSubmit} className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Details</CardTitle>
+          <CardTitle icon={FileText}>Details</CardTitle>
           <CardDescription>The standard information every item has.</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2">
@@ -157,7 +142,7 @@ export function ItemForm({
       {fields.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Category details</CardTitle>
+            <CardTitle icon={FolderTree}>Category details</CardTitle>
             <CardDescription>The columns your office set up for this category.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4 sm:grid-cols-2">

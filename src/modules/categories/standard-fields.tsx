@@ -1,6 +1,6 @@
 "use client";
 
-import { Banknote, CalendarDays, MapPin, Truck, type LucideIcon } from "lucide-react";
+import { Banknote, CalendarDays, ListChecks, type LucideIcon, MapPin, Truck } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -26,7 +26,7 @@ export function StandardFields({ categoryId, disabled, canEdit }: { categoryId: 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Standard fields</CardTitle>
+        <CardTitle icon={ListChecks}>Standard fields</CardTitle>
         <CardDescription>Turn off the ones this category doesn&apos;t need. Existing values are kept.</CardDescription>
       </CardHeader>
       <CardContent>

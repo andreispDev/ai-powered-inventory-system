@@ -1,3 +1,4 @@
+import { ArrowLeftRight, MessageSquareReply } from "lucide-react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
@@ -49,7 +50,7 @@ async function Content({ params }: Props) {
       <PageHeader title={row.itemName} description="Transfer between offices" actions={canCancel ? <CancelTransferButton id={row.id} /> : undefined} />
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle icon={ArrowLeftRight}>
             Details
             <Badge className="capitalize" variant={row.status === "pending" ? "default" : row.status === "accepted" ? "secondary" : "outline"}>
               {row.status}
@@ -84,7 +85,7 @@ async function Content({ params }: Props) {
       {data.receiving && (
         <Card>
           <CardHeader>
-            <CardTitle>Your answer</CardTitle>
+            <CardTitle icon={MessageSquareReply}>Your answer</CardTitle>
           </CardHeader>
           <CardContent>
             <RespondToTransfer
