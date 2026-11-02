@@ -1,5 +1,5 @@
 import { count, desc, eq, isNull, sql } from "drizzle-orm";
-import { FileText, AlertTriangle, Banknote, Boxes, Building2, FolderTree, History, PackageCheck, PackageX, PieChart, TrendingUp, Users, Zap } from "lucide-react";
+import { FileText, AlertTriangle, Boxes, Building2, FolderTree, History, PackageCheck, PackageX, PieChart, TrendingUp, Users, Zap } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
@@ -84,7 +84,6 @@ async function Content() {
     return { stats, outOfStock, breakdown, categories, people: people.total, offices: offices.total, activity, showActivity, stockouts };
   });
 
-  const value = Number(data.stats.value);
   const waiting = data.stats.outOfStock;
   const description =
     actor.role === "developer"
@@ -120,7 +119,6 @@ async function Content() {
         <StatCard label="Out of stock" icon={PackageX} value={data.stats.outOfStock.toLocaleString()} href="/inventory" />
         {actor.role !== "developer" && <StatCard label="Categories" icon={FolderTree} value={data.categories.toLocaleString()} href="/categories" />}
         {can("user.read") && <StatCard label="People" icon={Users} value={data.people.toLocaleString()} href="/accounts" />}
-        {actor.role === "admin" && <StatCard label="Stock value" icon={Banknote} value={value.toLocaleString(undefined, { maximumFractionDigits: 2 })} />}
       </div>
 
       {data.categories === 0 && data.stats.items === 0 && actor.role !== "developer" && (

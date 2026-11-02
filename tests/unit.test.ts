@@ -3,6 +3,7 @@ import { backtest, forecastItem, holt, keepsTheNumbers, startOfWeek, tsb, type F
 import { crumbsFor } from "@/components/shell/breadcrumbs";
 import { buildPdf, exportFileName, toCsv, type ExportTable } from "@/lib/export-format";
 import { parsePage } from "@/lib/pagination";
+import { ancestorsOf, withDescendants } from "@/modules/categories/tree";
 import { canStartSession, isPastAbsoluteLimit } from "@/server/auth/sign-in-rules";
 import { effectivePermissions, isAllowed, type Grant } from "@/server/authz/catalog";
 import { contrast, themeTokens, THEMES, type Oklch } from "@/lib/theme-tokens";
@@ -252,5 +253,34 @@ describe("exports", () => {
     expect(doc.output()).toContain("???");
     expect(doc.output()).not.toContain("Generated");
     expect(doc.internal.pageSize.getHeight()).toBeGreaterThan(doc.internal.pageSize.getWidth());
+  });
+});
+
+describe("category tree", () => {
+  const rows = [
+    { id: "assets", parentId: null },
+    { id: "tv", parentId: "assets" },
+    { id: "pc", parentId: "assets" },
+    { id: "laptop", parentId: "pc" },
+    { id: "papers", parentId: null },
+  ];
+
+  it("includes everything under a category", () => {
+    expect(withDescendants(rows, "assets").sort()).toEqual(["assets", "laptop", "pc", "tv"]);
+    expect(withDescendants(rows, "tv")).toEqual(["tv"]);
+  });
+
+  it("walks up to the top", () => {
+    expect(ancestorsOf(rows, "laptop").map((row) => row.id)).toEqual(["assets", "pc"]);
+    expect(ancestorsOf(rows, "assets")).toEqual([]);
+  });
+
+  it("survives a loop in bad data", () => {
+    const loop = [
+      { id: "a", parentId: "b" },
+      { id: "b", parentId: "a" },
+    ];
+    expect(withDescendants(loop, "a").sort()).toEqual(["a", "b"]);
+    expect(ancestorsOf(loop, "a").length).toBeLessThanOrEqual(10);
   });
 });

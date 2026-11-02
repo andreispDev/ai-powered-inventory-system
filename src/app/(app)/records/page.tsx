@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { param, parsePage, type SearchParams } from "@/lib/pagination";
 import { getCategory, listCategories, listFields } from "@/modules/categories/queries";
+import { withDescendants } from "@/modules/categories/tree";
 import { ItemsTable } from "@/modules/inventory/items-table";
 import { listItems, listPeople } from "@/modules/inventory/queries";
 import { requireActor } from "@/server/auth/session";
@@ -45,7 +46,7 @@ async function Content({ searchParams }: Props) {
     const { rows, total } = await listItems(tx, {
       kind: "records",
       q,
-      categoryId,
+      categoryIds: categoryId ? withDescendants(categories, categoryId) : undefined,
       deleted,
       attributes,
       sort: param(params, "sort"),
@@ -82,7 +83,7 @@ async function Content({ searchParams }: Props) {
         }
       />
       <div className="flex flex-wrap items-center gap-2">
-        <TableSearch placeholder="Search name or reference…" />
+        <TableSearch placeholder="Search…" />
         <TableFilter name="category" label="Category" options={data.categories.map((row) => ({ value: row.id, label: actor.officeId ? row.name : `${row.officeName}: ${row.name}` }))} />
         {filterable.map((field) => (
           <TableFilter

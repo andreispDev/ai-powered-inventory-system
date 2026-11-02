@@ -23,9 +23,6 @@ export const MAX_FIELDS_PER_CATEGORY = 50;
 /** Standard item fields a category can turn off */
 export const OPTIONAL_ITEM_FIELDS = [
   { id: "location", label: "Location" },
-  { id: "supplier", label: "Supplier" },
-  { id: "unitCost", label: "Unit cost" },
-  { id: "purchaseDate", label: "Purchase date" },
 ] as const;
 
 export type OptionalItemField = (typeof OPTIONAL_ITEM_FIELDS)[number]["id"];

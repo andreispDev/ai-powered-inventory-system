@@ -1,6 +1,6 @@
 "use client";
 
-import { Activity, Banknote, Barcode, CalendarDays, CircleDot, FileText, Fingerprint, FolderTree, Hash, type LucideIcon, MapPin, Package, Ruler, ShieldCheck, StickyNote, Truck } from "lucide-react";
+import { CircleDot, FileText, FolderTree, Hash, type LucideIcon, MapPin, Package, Ruler, StickyNote } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
@@ -74,7 +74,7 @@ export function ItemForm({
     warrantyExpiry: item?.warrantyExpiry ?? "",
     notes: item?.notes ?? "",
   });
-  const [quantity, setQuantity] = useState("0");
+  const [quantity, setQuantity] = useState("1");
   const [attributes, setAttributes] = useState<Record<string, unknown>>(item?.attributes ?? {});
 
   async function onSubmit(event: FormEvent) {
@@ -84,7 +84,8 @@ export function ItemForm({
       : await create.submit({ ...values, attributes, categoryId, quantity: Number(quantity) });
     if (!result?.ok) return;
     toast.success(`${records ? "Record" : "Item"} ${item ? "saved" : "added"}.`);
-    router.push(`/${records ? "records" : "inventory"}/${result.data.id}`);
+    // Back to the table it belongs in, or to the record being edited.
+    router.push(item ? `/${records ? "records" : "inventory"}/${result.data.id}` : `/categories/${categoryId}`);
   }
 
   const others = savedNames.filter((other) => other.id !== item?.id);
@@ -110,7 +111,7 @@ export function ItemForm({
       <Card>
         <CardHeader>
           <CardTitle icon={FileText}>Details</CardTitle>
-          <CardDescription>{records ? "The basics of this record." : "The standard information every item has."}</CardDescription>
+          <CardDescription>The usual details. The date added is recorded for you.</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2">
           <div className="sm:col-span-2">
@@ -127,8 +128,7 @@ export function ItemForm({
               </p>
             )}
           </div>
-          {text("sku", records ? "Reference number" : "SKU or code", Barcode)}
-          {!records && (
+                    {!records && (
           <FormField id="status" label="Status" icon={CircleDot} errors={state.fieldErrors.status}>
             <NativeSelect
               id="status"
@@ -150,17 +150,7 @@ export function ItemForm({
           )}
           {!records && text("unit", "Unit", Ruler, { required: true, help: "Such as pcs, box or kg." })}
           {text("location", "Location", MapPin)}
-          {!records && (
-            <>
-              {text("condition", "Condition", Activity)}
-              {text("serialNumber", "Serial number", Fingerprint)}
-              {text("supplier", "Supplier", Truck)}
-              {text("unitCost", "Unit cost", Banknote, { type: "number" })}
-              {text("purchaseDate", "Purchase date", CalendarDays, { type: "date" })}
-              {text("warrantyExpiry", "Warranty expiry", ShieldCheck, { type: "date" })}
-            </>
-          )}
-          <div className="sm:col-span-2">
+                    <div className="sm:col-span-2">
             <FormField id="notes" label="Notes" icon={StickyNote} errors={state.fieldErrors.notes}>
               <Textarea id="notes" value={values.notes} onChange={(event) => setValues({ ...values, notes: event.target.value })} />
             </FormField>
@@ -171,8 +161,8 @@ export function ItemForm({
       {fields.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle icon={FolderTree}>Category details</CardTitle>
-            <CardDescription>The columns your office set up for this category.</CardDescription>
+            <CardTitle icon={FolderTree}>Your columns</CardTitle>
+            <CardDescription>The columns set up for this category.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4 sm:grid-cols-2">
             {fields.map((field) => (

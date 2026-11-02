@@ -1,6 +1,6 @@
 "use client";
 
-import { Banknote, CalendarDays, ListChecks, type LucideIcon, MapPin, Truck } from "lucide-react";
+import { ListChecks, type LucideIcon, MapPin } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -13,12 +13,9 @@ import { OPTIONAL_ITEM_FIELDS, type OptionalItemField } from "./field-schema";
 
 const ICONS: Record<OptionalItemField, LucideIcon> = {
   location: MapPin,
-  supplier: Truck,
-  unitCost: Banknote,
-  purchaseDate: CalendarDays,
 };
 
-export function StandardFields({ categoryId, disabled, canEdit, records = false }: { categoryId: string; disabled: readonly string[]; canEdit: boolean; records?: boolean }) {
+export function StandardFields({ categoryId, disabled, canEdit }: { categoryId: string; disabled: readonly string[]; canEdit: boolean }) {
   const router = useRouter();
   const { submit, state } = useSubmit(setFieldDisabled);
   const [pending, setPending] = useState<{ field: OptionalItemField; label: string; disable: boolean } | null>(null);
@@ -26,7 +23,7 @@ export function StandardFields({ categoryId, disabled, canEdit, records = false 
   return (
     <Card>
       <CardHeader>
-        <CardTitle icon={ListChecks}>Standard fields</CardTitle>
+        <CardTitle icon={ListChecks}>Optional fields</CardTitle>
         <CardDescription>Turn off the ones this category doesn&apos;t need. Existing values are kept.</CardDescription>
       </CardHeader>
       <CardContent>
@@ -53,7 +50,7 @@ export function StandardFields({ categoryId, disabled, canEdit, records = false 
           />
         )}
         <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-          {OPTIONAL_ITEM_FIELDS.filter((option) => !records || option.id === "location").map(({ id, label }) => {
+          {OPTIONAL_ITEM_FIELDS.map(({ id, label }) => {
             const Icon = ICONS[id];
             const on = !disabled.includes(id);
             return (

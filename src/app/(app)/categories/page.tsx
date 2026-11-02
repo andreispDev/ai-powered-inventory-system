@@ -1,4 +1,4 @@
-import { Boxes, Eye, FolderTree, Plus } from "lucide-react";
+import { Eye, FolderTree, Plus } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
@@ -12,6 +12,7 @@ import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { parsePage, type SearchParams } from "@/lib/pagination";
 import { listCategories } from "@/modules/categories/queries";
+import { withDescendants } from "@/modules/categories/tree";
 import { CategoryArchiveButton } from "@/modules/categories/archive-button";
 import { requireActor } from "@/server/auth/session";
 import { readScoped } from "@/server/guard/read";
@@ -27,13 +28,15 @@ async function Content({ searchParams }: Props) {
   const { page, pageSize, offset } = parsePage(await searchParams);
   const canCreate = actor.permissions.includes("category.create");
   const showOffice = !actor.officeId;
-  const nameOf = new Map(rows.map((row) => [row.id, row.name]));
+  const topLevel = rows.filter((row) => !row.parentId);
+  const below = (id: string) => withDescendants(rows, id).slice(1);
+  const itemsIn = (id: string) => withDescendants(rows, id).reduce((sum, other) => sum + (rows.find((row) => row.id === other)?.items ?? 0), 0);
 
   return (
     <PageContainer width="wide">
       <PageHeader
         title="Categories"
-        description="Each category can have its own detailed columns."
+        description="Open a category to see its subcategories and everything in it."
         actions={
           canCreate ? (
             <Button asChild>
@@ -45,7 +48,7 @@ async function Content({ searchParams }: Props) {
           ) : undefined
         }
       />
-      {rows.length === 0 ? (
+      {topLevel.length === 0 ? (
         <EmptyState
           icon={FolderTree}
           title="No categories yet"
@@ -58,7 +61,7 @@ async function Content({ searchParams }: Props) {
               <TableRow>
                 <TableHead>Name</TableHead>
                 <TableHead>Type</TableHead>
-                <TableHead>Inside</TableHead>
+                <TableHead className="text-right">Subcategories</TableHead>
                 {showOffice && <TableHead>Office</TableHead>}
                 <TableHead className="text-right">Columns</TableHead>
                 <TableHead className="text-right">Items</TableHead>
@@ -67,7 +70,7 @@ async function Content({ searchParams }: Props) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {rows.slice(offset, offset + pageSize).map((row) => (
+              {topLevel.slice(offset, offset + pageSize).map((row) => (
                 <TableRow key={row.id}>
                   <TableCell>
                     <Link href={`/categories/${row.id}`} className="font-medium hover:underline">
@@ -75,17 +78,16 @@ async function Content({ searchParams }: Props) {
                     </Link>
                   </TableCell>
                   <TableCell>{row.kind === "records" ? "Records" : "Stock"}</TableCell>
-                  <TableCell>{row.parentId ? nameOf.get(row.parentId) : "—"}</TableCell>
+                  <TableCell className="text-right tabular-nums">{below(row.id).length}</TableCell>
                   {showOffice && <TableCell>{row.officeName}</TableCell>}
                   <TableCell className="text-right tabular-nums">{row.fields}</TableCell>
-                  <TableCell className="text-right tabular-nums">{row.items}</TableCell>
+                  <TableCell className="text-right tabular-nums">{itemsIn(row.id)}</TableCell>
                   <TableCell>
                     <Badge variant={row.archivedAt ? "outline" : "secondary"}>{row.archivedAt ? "Archived" : "Active"}</Badge>
                   </TableCell>
                   <TableCell>
                     <RowActions>
                       <RowLink href={`/categories/${row.id}`} icon={Eye} label="View" />
-                      <RowLink href={`/${row.kind === "records" ? "records" : "inventory"}?category=${row.id}`} icon={Boxes} label={row.kind === "records" ? "Records" : "Items"} />
                       {actor.permissions.includes("category.archive") && <CategoryArchiveButton id={row.id} archived={!!row.archivedAt} size="sm" />}
                     </RowActions>
                   </TableCell>
@@ -93,7 +95,7 @@ async function Content({ searchParams }: Props) {
               ))}
             </TableBody>
           </Table>
-          <TablePagination total={rows.length} page={page} pageSize={pageSize} />
+          <TablePagination total={topLevel.length} page={page} pageSize={pageSize} />
         </Card>
       )}
     </PageContainer>

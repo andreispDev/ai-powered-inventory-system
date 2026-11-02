@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useUrlState } from "@/components/data-table/pagination";
 import { RowActions, RowLink } from "@/components/data-table/row-actions";
+import { LocalTime } from "@/components/shell/local-time";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -17,7 +18,7 @@ import { DeleteItemButton } from "./item-actions";
 export type ItemRow = {
   id: string;
   name: string;
-  sku: string | null;
+  createdAt: Date;
   status: string;
   quantity: number;
   unit: string;
@@ -47,6 +48,7 @@ export function ItemsTable({
   canEdit = false,
   canDelete = false,
   records = false,
+  hideCategory = false,
   manageColumnsHref,
 }: {
   rows: ItemRow[];
@@ -58,6 +60,7 @@ export function ItemsTable({
   canEdit?: boolean;
   canDelete?: boolean;
   records?: boolean;
+  hideCategory?: boolean;
   /** The category's own settings, when one is showing and this person may edit it */
   manageColumnsHref?: string;
 }) {
@@ -96,8 +99,7 @@ export function ItemsTable({
         </Link>
       ),
     },
-    { id: "sku", label: records ? "Reference" : "SKU", sort: "sku", render: (row) => <span className="font-mono text-xs">{row.sku ?? "—"}</span> },
-    { id: "category", label: "Category", render: (row) => row.categoryName },
+    ...(hideCategory ? [] : [{ id: "category", label: "Category", render: (row: ItemRow) => row.categoryName }]),
     ...(showOffice ? [{ id: "office", label: "Office", render: (row: ItemRow) => row.officeName }] : []),
     {
       id: "quantity",
@@ -129,6 +131,7 @@ export function ItemsTable({
         render: (row) => formatAttribute(row.attributes[field.key], field, people),
       }),
     ),
+    { id: "createdAt", label: "Date added", sort: "createdAt", render: (row) => <LocalTime date={row.createdAt} /> },
   ];
 
   const shown = records ? columns.filter((column) => column.id !== "quantity" && column.id !== "status") : columns;

@@ -1,5 +1,5 @@
 import "server-only";
-import { and, asc, count, desc, eq, ilike, isNotNull, isNull, or, sql, type SQL } from "drizzle-orm";
+import { and, asc, count, desc, eq, ilike, inArray, isNotNull, isNull, or, sql, type SQL } from "drizzle-orm";
 import { isNumeric, type FieldDef } from "@/modules/categories/field-schema";
 import { appUser, category, item, itemAttachment, office, stockMovement } from "@/server/db/schema";
 import { itemIsKind, type CategoryKind } from "./kinds";
@@ -12,13 +12,15 @@ export const SORTABLE = {
   status: item.status,
   location: item.location,
   updatedAt: item.updatedAt,
+  createdAt: item.createdAt,
 } as const;
 
 export type ItemFilters = {
   /** Inventory lists only stock, and the Records page only records */
   kind?: CategoryKind;
   q?: string;
-  categoryId?: string;
+  /** A category and its subcategories */
+  categoryIds?: string[];
   status?: string;
   deleted?: boolean;
   sort?: string;
@@ -47,7 +49,7 @@ export async function listItems(tx: ScopedTx, filters: ItemFilters) {
       ),
     );
   }
-  if (filters.categoryId) conditions.push(eq(item.categoryId, filters.categoryId));
+  if (filters.categoryIds) conditions.push(inArray(item.categoryId, filters.categoryIds));
   if (filters.status) conditions.push(sql`${item.status}::text = ${filters.status}`);
 
   for (const [key, value] of Object.entries(filters.attributes ?? {})) {
@@ -83,6 +85,7 @@ export async function listItems(tx: ScopedTx, filters: ItemFilters) {
         location: item.location,
         attributes: item.attributes,
         updatedAt: item.updatedAt,
+        createdAt: item.createdAt,
         categoryName: category.name,
         officeName: office.name,
       })

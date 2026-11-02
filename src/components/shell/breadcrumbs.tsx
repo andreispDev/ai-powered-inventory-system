@@ -35,6 +35,7 @@ const LABELS: Record<string, string> = {
   profile: "Profile",
   settings: "Settings",
   new: "New",
+  columns: "Edit columns",
   edit: "Edit",
 };
 

@@ -190,20 +190,20 @@ async function Content({ params, searchParams }: Props) {
         </CardHeader>
         <CardContent className="space-y-4">
           <Detail
-            rows={records ? [
-              ["Reference", item.sku],
-              ...(isOff("location") ? [] : ([["Location", item.location]] as [string, string | null][])),
-              ...activeFields.map(
-                (field): [string, string] => [field.label, formatAttribute(item.attributes[field.key], field, peopleById)],
-              ),
-            ] : [
-              ["SKU", item.sku],
-              ["Serial number", item.serialNumber],
-              ["Condition", item.condition],
-              ...(isOff("supplier") ? [] : ([["Supplier", item.supplier]] as [string, string | null][])),
-              ...(isOff("unitCost") ? [] : ([["Unit cost", item.unitCost]] as [string, string | null][])),
-              ...(isOff("purchaseDate") ? [] : ([["Purchase date", item.purchaseDate]] as [string, string | null][])),
-              ["Warranty expiry", item.warrantyExpiry],
+            rows={[
+              ...(records && !isOff("location") ? ([["Location", item.location]] as [string, string | null][]) : []),
+              // Fields no longer on the form, kept for anything saved before.
+              ...(
+                [
+                  ["SKU", item.sku],
+                  ["Serial number", item.serialNumber],
+                  ["Condition", item.condition],
+                  ["Supplier", item.supplier],
+                  ["Unit cost", item.unitCost],
+                  ["Purchase date", item.purchaseDate],
+                  ["Warranty expiry", item.warrantyExpiry],
+                ] as [string, string | null][]
+              ).filter(([, value]) => value),
               ...activeFields.map(
                 (field): [string, string] => [field.label, formatAttribute(item.attributes[field.key], field, peopleById)],
               ),

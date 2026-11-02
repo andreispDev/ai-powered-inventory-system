@@ -4,6 +4,7 @@ import type { ExportTable } from "@/lib/export-format";
 import { param, type SearchParams } from "@/lib/pagination";
 import { logWhere } from "@/modules/audit/log-filter";
 import { getCategory, listCategories, listFields } from "@/modules/categories/queries";
+import { withDescendants } from "@/modules/categories/tree";
 import { formatAttribute, statusLabel } from "@/modules/inventory/format";
 import { listItems, listPeople } from "@/modules/inventory/queries";
 import { writeAudit } from "@/server/audit/writer";
@@ -33,7 +34,7 @@ async function itemTable(tx: ScopedTx, actor: Actor, params: SearchParams, kind:
   const { rows, total } = await listItems(tx, {
     kind,
     q: param(params, "q")?.trim() || undefined,
-    categoryId,
+    categoryIds: categoryId ? withDescendants(categories, categoryId) : undefined,
     status: kind === "stock" ? param(params, "status") : undefined,
     deleted: canRestore && param(params, "view") === "deleted",
     sort: param(params, "sort"),
@@ -53,16 +54,15 @@ async function itemTable(tx: ScopedTx, actor: Actor, params: SearchParams, kind:
     title: isStock ? "Inventory" : "Records",
     columns: [
       "Name",
-      isStock ? "SKU" : "Reference",
       "Category",
       ...(showOffice ? ["Office"] : []),
       ...(isStock ? ["Quantity", "Unit", "Status"] : []),
       ...(showLocation ? ["Location"] : []),
       ...fields.map((field) => field.label),
+      "Date added",
     ],
     rows: rows.map((row) => [
       row.name,
-      row.sku ?? "",
       row.categoryName,
       ...(showOffice ? [row.officeName] : []),
       ...(isStock ? [String(row.quantity), row.unit, statusLabel(row.status)] : []),
@@ -71,6 +71,7 @@ async function itemTable(tx: ScopedTx, actor: Actor, params: SearchParams, kind:
         const text = formatAttribute(row.attributes[field.key], field, people);
         return text === "—" ? "" : text;
       }),
+      row.createdAt.toISOString().slice(0, 10),
     ]),
     total,
     truncated: total > rows.length,

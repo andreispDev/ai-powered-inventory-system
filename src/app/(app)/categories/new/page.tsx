@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { z } from "zod";
 import { AccessDenied } from "@/components/feedback/access-denied";
 import { PageContainer, PageHeader, PageSkeleton } from "@/components/shell/page";
 import { Card, CardContent } from "@/components/ui/card";
 import { param, type SearchParams } from "@/lib/pagination";
 import { CategoryForm } from "@/modules/categories/category-form";
-import { listCategories } from "@/modules/categories/queries";
+import { getCategory } from "@/modules/categories/queries";
 import { requireActor } from "@/server/auth/session";
 import { readScoped } from "@/server/guard/read";
 
@@ -16,14 +17,15 @@ type Props = { searchParams: Promise<SearchParams> };
 async function Content({ searchParams }: Props) {
   const actor = await requireActor();
   if (!actor.permissions.includes("category.create")) return <AccessDenied />;
-  const categories = await readScoped(actor, listCategories);
-  const defaultKind = param(await searchParams, "kind") === "records" ? "records" : "stock";
+  const params = await searchParams;
+  const parentId = param(params, "parent");
+  const parent = parentId && z.uuid().safeParse(parentId).success ? await readScoped(actor, (tx) => getCategory(tx, parentId)) : undefined;
   return (
     <PageContainer width="narrow">
-      <PageHeader title="New category" description="Choose what it holds and which columns it needs." />
+      <PageHeader title={parent ? `New subcategory in ${parent.name}` : "New category"} description={parent ? "Give it a name and the columns it needs." : "Choose what it holds and which columns it needs."} />
       <Card>
         <CardContent>
-          <CategoryForm parents={categories.filter((c) => !c.archivedAt).map(({ id, name, kind }) => ({ id, name, kind }))} defaultKind={defaultKind} />
+          <CategoryForm parent={parent ? { id: parent.id, name: parent.name, kind: parent.kind } : undefined} defaultKind={param(params, "kind") === "records" ? "records" : "stock"} />
         </CardContent>
       </Card>
     </PageContainer>

@@ -1,6 +1,6 @@
 "use client";
 
-import { AlignLeft, Boxes, Columns3, FileText, FolderTree, type LucideIcon, Plus, Tag, X } from "lucide-react";
+import { AlignLeft, Boxes, Columns3, FileText, Lock, type LucideIcon, Plus, Tag, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
@@ -22,22 +22,22 @@ const KINDS: { value: "stock" | "records"; label: string; icon: LucideIcon; help
 type Column = { rowId: number; label: string; type: FieldType; required: boolean; options: string };
 
 export function CategoryForm({
-  parents,
+  parent,
   defaultKind = "stock",
 }: {
-  parents: readonly { id: string; name: string; kind: "stock" | "records" }[];
+  /** A subcategory takes its type from its parent */
+  parent?: { id: string; name: string; kind: "stock" | "records" };
   defaultKind?: "stock" | "records";
 }) {
   const router = useRouter();
   const { submit, state } = useSubmit(createCategory);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [parentId, setParentId] = useState("");
-  const [kind, setKind] = useState(defaultKind);
+  const [kind, setKind] = useState(parent?.kind ?? defaultKind);
   const [columns, setColumns] = useState<Column[]>([{ rowId: 0, label: "", type: "text", required: false, options: "" }]);
   const [nextRow, setNextRow] = useState(1);
-  const [hidden, setHidden] = useState<OptionalItemField[]>([]);
-  const standard = OPTIONAL_ITEM_FIELDS.filter((field) => kind === "stock" || field.id === "location");
+  const [hidden, setHidden] = useState<OptionalItemField[]>(["location"]);
+  const given = kind === "stock" ? ["Name", "Quantity", "Status", "Date added"] : ["Name", "Date added"];
   const change = (rowId: number, changes: Partial<Column>) => setColumns(columns.map((column) => (column.rowId === rowId ? { ...column, ...changes } : column)));
 
   async function onSubmit(event: FormEvent) {
@@ -46,8 +46,8 @@ export function CategoryForm({
       name,
       description,
       kind,
-      parentId: parentId || undefined,
-      disabledFields: hidden.filter((field) => standard.some((option) => option.id === field)),
+      parentId: parent?.id,
+      disabledFields: hidden,
       // Rows left blank are just unused.
       columns: columns
         .filter((column) => column.label.trim())
@@ -67,6 +67,7 @@ export function CategoryForm({
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
+      {!parent && (
       <fieldset className="space-y-2">
         <legend className="text-sm font-medium">What will this category hold?</legend>
         <p className="text-muted-foreground text-xs">This can&apos;t be changed later.</p>
@@ -81,10 +82,7 @@ export function CategoryForm({
                 name="kind"
                 className="sr-only"
                 checked={kind === option.value}
-                onChange={() => {
-                  setKind(option.value);
-                  setParentId("");
-                }}
+                onChange={() => setKind(option.value)}
               />
               <span className="bg-primary/10 text-primary flex size-8 shrink-0 items-center justify-center rounded-lg">
                 <option.icon className="size-4" aria-hidden />
@@ -97,38 +95,34 @@ export function CategoryForm({
           ))}
         </div>
       </fieldset>
+      )}
       <FormField id="name" icon={Tag} label="Name" required errors={state.fieldErrors.name}>
         <Input id="name" required value={name} onChange={(event) => setName(event.target.value)} />
       </FormField>
       <FormField id="description" icon={AlignLeft} label="Description" errors={state.fieldErrors.description}>
         <Textarea id="description" value={description} onChange={(event) => setDescription(event.target.value)} />
       </FormField>
-      <FormField id="parentId" icon={FolderTree} label="Inside category" help="Optional. Up to 3 levels." errors={state.fieldErrors.parentId}>
-        <NativeSelect
-          id="parentId"
-          value={parentId}
-          onChange={(event) => setParentId(event.target.value)}
-        >
-          <option value="">None (top level)</option>
-          {parents.filter((parent) => parent.kind === kind).map((parent) => (
-            <option key={parent.id} value={parent.id}>
-              {parent.name}
-            </option>
-          ))}
-        </NativeSelect>
-      </FormField>
       <fieldset className="space-y-3 rounded-lg border p-3">
         <legend className="flex items-center gap-1.5 px-1 text-sm font-medium">
           <Columns3 className="text-primary size-4" aria-hidden />
           Which columns should it have?
         </legend>
-        <p className="text-muted-foreground text-xs">These become the fields on its form and the columns in its table. You can change them later.</p>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="text-muted-foreground text-xs">Always included:</span>
+          {given.map((label) => (
+            <span key={label} className="bg-muted inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium">
+              <Lock className="size-3" aria-hidden />
+              {label}
+            </span>
+          ))}
+        </div>
+        <p className="text-muted-foreground text-xs">Add your own, such as Serial no. or Date received. These become the fields on its form and the columns in its table.</p>
         {columns.map((column, index) => (
           <div key={column.rowId} className="space-y-2 rounded-md border p-2.5">
             <div className="flex flex-wrap items-center gap-2">
               <Input
                 aria-label={`Column ${index + 1} name`}
-                placeholder={kind === "records" ? "Such as Client or Due date" : "Such as Brand or Warranty"}
+                placeholder={kind === "records" ? "Such as Client or Due date" : "Such as Serial no. or Date received"}
                 className="min-w-40 flex-1"
                 maxLength={60}
                 value={column.label}
@@ -168,9 +162,9 @@ export function CategoryForm({
           Add a column
         </Button>
         <div className="border-t pt-3">
-          <p className="mb-2 text-sm font-medium">Standard fields to include</p>
+          <p className="mb-2 text-sm font-medium">Optional fields</p>
           <div className="flex flex-wrap gap-x-4 gap-y-2">
-            {standard.map((field) => (
+            {OPTIONAL_ITEM_FIELDS.map((field) => (
               <label key={field.id} className="flex items-center gap-1.5 text-sm">
                 <Checkbox
                   checked={!hidden.includes(field.id)}
@@ -183,7 +177,7 @@ export function CategoryForm({
         </div>
       </fieldset>
       <FormError state={state} />
-      <FormActions state={state} submitLabel="Create category" />
+      <FormActions state={state} submitLabel={parent ? "Create subcategory" : "Create category"} />
     </form>
   );
 }

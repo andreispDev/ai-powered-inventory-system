@@ -35,7 +35,7 @@ async function logoAsPng(url: string) {
   return { dataUrl: canvas.toDataURL("image/png"), width: bitmap.width, height: bitmap.height };
 }
 
-export function ExportMenu({ dataset, defaultTitle, organization, logoUrl }: { dataset: "inventory" | "records" | "logs"; defaultTitle: string; organization: string; logoUrl?: string | null }) {
+export function ExportMenu({ dataset, defaultTitle, organization, logoUrl, extraParams }: { dataset: "inventory" | "records" | "logs"; defaultTitle: string; organization: string; logoUrl?: string | null; extraParams?: Record<string, string> }) {
   const params = useSearchParams();
   const offline = useConnection() !== "online";
   const [busy, setBusy] = useState(false);
@@ -60,6 +60,7 @@ export function ExportMenu({ dataset, defaultTitle, organization, logoUrl }: { d
     query.delete("page");
     query.delete("size");
     query.set("dataset", dataset);
+    for (const [name, value] of Object.entries(extraParams ?? {})) query.set(name, value);
     const response = await fetch(`/api/export?${query}`);
     if (!response.ok) {
       const { message } = (await response.json().catch(() => ({ message: null }))) as { message: string | null };

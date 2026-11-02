@@ -122,6 +122,7 @@ Priority: **P0** is required for launch, **P1** follows soon after launch, **P2*
 | ORG-8 | A category is either Stock items or Custom records, chosen when it is created. Records such as work papers have their own columns and page, and stay out of inventory counts, stock moves, predictions and alerts | P1 |
 | ORG-9 | Records can hold files (PDF, Office, text, CSV and images, up to 10 MB each and 20 per record). Files are checked by their contents, only download, and follow office separation | P1 |
 | ORG-10 | Inventory, Records and Logs export to CSV and to PDF with a customizable header, following the table's filters, up to 5,000 rows. Exports need the export permission and are logged | P1 |
+| ORG-11 | A category's page is its table: its subcategories, then everything in it. Name and Date added are given, and everything else is custom columns. Purchasing fields are not part of the app | P0 |
 | ORG-7 | Admins set their office's workspace name and logo in Settings, and everyone can add a profile photo. Images are PNG, JPEG or WebP only | P1 |
 | ORG-6 | Moving a user to another office is a Developer action, is audited, and removes access to the old office immediately | P1 |
 
