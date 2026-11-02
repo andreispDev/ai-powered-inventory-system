@@ -193,6 +193,17 @@ describe("audit log", () => {
 });
 
 describe("account rules", () => {
+  it("won't let an office touch a Developer's or another office's sign-in email", async () => {
+    await asApp(scopeA, (tx) => tx.update(appUser).set({ email: "taken@example.test" }).where(eq(appUser.id, DEVELOPER)));
+    await asApp(scopeA, (tx) => tx.update(appUser).set({ email: "taken@example.test" }).where(eq(appUser.id, USER_B)));
+    const rows = await db.select({ email: appUser.email }).from(appUser);
+    expect(rows.map((row) => row.email)).not.toContain("taken@example.test");
+  });
+
+  it("keeps sign-in emails unique", async () => {
+    expect(await failure(asApp(scopeA, (tx) => tx.update(appUser).set({ email: "b@example.test" }).where(eq(appUser.id, USER_A))))).not.toBeNull();
+  });
+
   it("requires developers to have no office, and others to have one", async () => {
     expect(
       await failure(db.insert(appUser).values({ name: "x", email: "y@example.test", role: "user" })),

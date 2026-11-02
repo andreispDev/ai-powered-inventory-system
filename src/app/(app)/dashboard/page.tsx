@@ -32,6 +32,8 @@ const ACTION_LABELS: Record<string, string> = {
   "stock.adjust": "adjusted stock",
   "category.created": "created a category",
   "user.created": "created an account",
+  "user.updated": "edited an account",
+  "user.email_changed": "changed an account's email",
   "office.created": "created an office",
   "user.photo_changed": "changed their photo",
   "user.photo_removed": "removed their photo",

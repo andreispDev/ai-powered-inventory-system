@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { param, parsePage, type SearchParams } from "@/lib/pagination";
+import { EditAccountButton } from "@/modules/accounts/edit-account-dialog";
 import { AccountStatusButton } from "@/modules/accounts/status-button";
 import { requireActor } from "@/server/auth/session";
 import { appUser, office } from "@/server/db/schema";
@@ -116,7 +117,10 @@ async function Content({ searchParams }: Props) {
                     <RowActions>
                       <RowLink href={`/accounts/${row.id}`} icon={Eye} label="View" />
                       {actor.permissions.includes("user.manage") && row.id !== actor.id && (row.role === "user" || actor.role === "developer") && (
-                        <AccountStatusButton id={row.id} name={row.name} active={row.status !== "deactivated"} size="sm" />
+                        <>
+                          <EditAccountButton id={row.id} name={row.name} email={row.email} size="sm" />
+                          <AccountStatusButton id={row.id} name={row.name} active={row.status !== "deactivated"} size="sm" />
+                        </>
                       )}
                     </RowActions>
                   </TableCell>

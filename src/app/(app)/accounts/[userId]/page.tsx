@@ -6,6 +6,7 @@ import { z } from "zod";
 import { AccessDenied } from "@/components/feedback/access-denied";
 import { PageContainer, PageSkeleton } from "@/components/shell/page";
 import { loadProfileActivity, ProfilePhoto, ProfileView } from "@/modules/accounts/profile-view";
+import { EditAccountButton } from "@/modules/accounts/edit-account-dialog";
 import { AccountStatusButton } from "@/modules/accounts/status-button";
 import { requireActor } from "@/server/auth/session";
 import { effectivePermissions, type Role } from "@/server/authz/catalog";
@@ -52,7 +53,14 @@ async function Content({ params }: Props) {
         memberSince={user.createdAt}
         permissionCount={effectivePermissions(user.role as Role, data.relevant).length}
         photo={<ProfilePhoto name={user.name} url={photoUrl} />}
-        actions={canChange ? <AccountStatusButton id={user.id} name={user.name} active={user.status !== "deactivated"} /> : undefined}
+        actions={
+          canChange ? (
+            <div className="flex flex-wrap gap-2">
+              <EditAccountButton id={user.id} name={user.name} email={user.email} />
+              <AccountStatusButton id={user.id} name={user.name} active={user.status !== "deactivated"} />
+            </div>
+          ) : undefined
+        }
         activity={data.activity}
       />
     </PageContainer>

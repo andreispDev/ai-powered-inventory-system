@@ -3,7 +3,9 @@
 import { and, count, eq, ne, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { appUser, office } from "@/server/db/schema";
+import { sendEmailChangedNotice } from "@/server/auth/mailer";
+import { getAuthDb } from "@/server/db/client";
+import { appUser, office, session } from "@/server/db/schema";
 import { AppError, isUniqueViolation } from "@/server/guard/errors";
 import { guard } from "@/server/guard/guard";
 
@@ -54,6 +56,60 @@ export const createAccount = guard({
     revalidatePath("/accounts");
     revalidatePath(`/console/offices/${officeId}`);
     return { id: row.id };
+  },
+});
+
+/** Admins edit users in their own office, and Developers edit anyone. Nobody edits themselves here. */
+export const updateAccount = guard({
+  permission: "user.manage",
+  input: z.object({
+    id: z.uuid(),
+    name: z.string().trim().min(2, "Enter the person's name.").max(120),
+    email: z.email("Enter a valid email address.").transform((email) => email.trim().toLowerCase()),
+  }),
+  run: async ({ input: { id, name, email }, tx, actor, audit }) => {
+    const [target] = await tx.select().from(appUser).where(eq(appUser.id, id));
+    if (!target) throw notFound();
+    if (id === actor.id) throw new AppError("FORBIDDEN", "You can't change your own account here.");
+    // The email is how someone signs in, so editing it could take over the account. Never upward.
+    if (target.role !== "user" && actor.role !== "developer") {
+      throw new AppError("FORBIDDEN", "Only a Developer can change this account.");
+    }
+    const emailChanged = email !== target.email;
+    try {
+      await tx
+        .update(appUser)
+        .set({
+          name,
+          email,
+          // The new address isn't proven until they sign in with it.
+          ...(emailChanged ? { emailVerified: false, status: target.status === "deactivated" ? target.status : ("invited" as const) } : {}),
+        })
+        .where(eq(appUser.id, id));
+    } catch (error) {
+      if (isUniqueViolation(error)) {
+        throw new AppError("VALIDATION", "Please check the highlighted fields.", {
+          email: ["This email already has an account."],
+        });
+      }
+      throw error;
+    }
+    await audit({
+      action: emailChanged ? "user.email_changed" : "user.updated",
+      entityType: "app_user",
+      entityId: id,
+      officeId: target.officeId,
+      before: { name: target.name, email: target.email },
+      after: { name, email },
+    });
+    if (emailChanged) {
+      await getAuthDb().delete(session).where(eq(session.userId, id));
+      // A failed notice shouldn't undo the change. It's on the record either way.
+      await sendEmailChangedNotice(target.email).catch((error) => console.error("Email change notice:", String(error)));
+    }
+    revalidatePath("/accounts");
+    revalidatePath(`/accounts/${id}`);
+    return { id };
   },
 });
 

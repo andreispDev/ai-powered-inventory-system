@@ -14,7 +14,7 @@ export function getDb() {
   return (appDb ??= create(env().DATABASE_URL));
 }
 
-/** Can read accounts before a scope exists. Used only by sign-in and session lookup. */
+/** Can read accounts before a scope exists. Used only for sign-in, session lookup and ending sessions. */
 export function getAuthDb() {
   return (authDb ??= create(env().DATABASE_AUTH_URL));
 }
