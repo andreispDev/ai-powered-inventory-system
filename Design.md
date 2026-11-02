@@ -422,7 +422,7 @@ The bell opens a popover with Unread and All, and a link to the full page. Urgen
 
 ### Login
 
-A full-screen dusk photo of an office building, under a dark gradient and a faint dot pattern. Product text sits on the left and a frosted glass card with the email and code steps on the right. Phones show the name and card only. It looks the same in every theme, with fixed colors for contrast. Rejected sign-ins get a clear message and who to contact, with no technical detail.
+A full-screen photo of a glass office building, under a light gradient that is darker behind the text and a faint dot pattern. Product text sits on the left and a see-through glass card with the email and code steps on the right. Phones show the name and card only. It looks the same in every theme, with fixed colors for contrast. Rejected sign-ins get a clear message and who to contact, with no technical detail.
 
 ---
 

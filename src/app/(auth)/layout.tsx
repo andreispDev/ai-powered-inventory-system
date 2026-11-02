@@ -10,7 +10,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
         fill
         priority
         sizes="100vw"
-        className="-z-20 object-cover object-[center_32%]"
+        className="-z-20 object-cover object-[center_45%]"
       />
       <div aria-hidden className="auth-scrim absolute inset-0 -z-10" />
       <div aria-hidden className="auth-pattern absolute inset-0 -z-10" />

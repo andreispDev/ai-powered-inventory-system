@@ -1,13 +1,13 @@
-import { Boxes, Building2, Radio, ScrollText } from "lucide-react";
+import { Boxes, Building2, MessageSquare, Sparkles } from "lucide-react";
 import type { Metadata } from "next";
 import { SignInForm } from "./sign-in-form";
 
 export const metadata: Metadata = { title: "Sign in" };
 
 const POINTS = [
-  { icon: Building2, label: "Each office kept separate" },
-  { icon: ScrollText, label: "Every change on record" },
-  { icon: Radio, label: "Live updates" },
+  { icon: Sparkles, label: "AI forecasts" },
+  { icon: MessageSquare, label: "Ask in plain language" },
+  { icon: Building2, label: "Private to each office" },
 ];
 
 export default function LoginPage() {
@@ -21,13 +21,13 @@ export default function LoginPage() {
           <span className="text-lg font-semibold">Inventory</span>
         </div>
         <p className="mt-10 hidden text-xs font-semibold tracking-[0.18em] text-white/80 uppercase sm:block">
-          For every office in your organization
+          AI-powered inventory management
         </p>
         <h1 className="mt-3 hidden max-w-xl text-4xl leading-[1.1] font-semibold tracking-tight sm:block lg:text-5xl">
-          Every item, every office, one clear record.
+          Smarter inventory, so your team can focus on what matters.
         </h1>
         <p className="mt-4 hidden max-w-md text-base text-white/85 sm:block">
-          Know what you have, who has it, and what changed, with each office&apos;s data kept to itself.
+          Bring every office&apos;s stock together, spot shortages before they happen, and get answers just by asking.
         </p>
         <ul className="mt-7 hidden flex-wrap gap-2 sm:flex">
           {POINTS.map((point) => (
@@ -44,8 +44,9 @@ export default function LoginPage() {
 
       <section aria-label="Sign in" className="auth-glass auth-rise w-full rounded-3xl p-7 sm:p-8">
         <h2 className="text-2xl font-semibold tracking-tight">Sign in</h2>
-        <p className="mt-1 mb-6 text-sm opacity-85">Access is by invitation only. We&apos;ll email you a one-time code.</p>
+        <p className="mt-1 mb-6 text-sm">Welcome back. Enter your email and we&apos;ll send you a sign-in code.</p>
         <SignInForm />
+        <p className="mt-5 text-center text-xs">Need access? Ask your administrator.</p>
       </section>
     </div>
   );
