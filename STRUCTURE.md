@@ -364,4 +364,4 @@ Validated by `server/env.ts` at boot, so a bad deploy fails immediately. `.env.e
 | `staging` | All commits go here first |
 | `main` | Receives work from `staging` only, after the product owner approves |
 
-Never commit directly to `main`. The repo currently has only `master` and no remote, so these branches still need creating.
+Never commit directly to `main`. `main` doesn't exist yet and gets created when the first approved work moves over from `staging`.
