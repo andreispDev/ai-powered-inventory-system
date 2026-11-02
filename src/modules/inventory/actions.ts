@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { buildAttributesSchema, OPTIONAL_ITEM_FIELDS } from "@/modules/categories/field-schema";
 import { listFields } from "@/modules/categories/queries";
-import { category, item, stockMovement } from "@/server/db/schema";
+import { category, item, itemAttachment, stockMovement } from "@/server/db/schema";
 import type { ScopedTx } from "@/server/db/scope";
 import { AppError, isUniqueViolation } from "@/server/guard/errors";
 import { guard } from "@/server/guard/guard";
@@ -216,6 +216,23 @@ export const restoreItem = guard({
     await audit({ action: "item.restored", entityType: "item", entityId: id });
     revalidatePath("/inventory");
     revalidatePath(`/inventory/${id}`);
+    return { id };
+  },
+});
+
+/** Permanent, unlike deleting a record. The confirmation says so, and the log keeps its details. */
+export const removeAttachment = guard({
+  permission: "item.update",
+  input: z.object({ id: z.uuid() }),
+  run: async ({ input: { id }, tx, audit }) => {
+    const [file] = await tx
+      .select({ itemId: itemAttachment.itemId, fileName: itemAttachment.fileName, sizeBytes: itemAttachment.sizeBytes })
+      .from(itemAttachment)
+      .where(eq(itemAttachment.id, id));
+    if (!file) throw new AppError("NOT_FOUND", "This file no longer exists.");
+    await tx.delete(itemAttachment).where(eq(itemAttachment.id, id));
+    await audit({ action: "item.file_removed", entityType: "item", entityId: file.itemId, before: { attachmentId: id, fileName: file.fileName, sizeBytes: file.sizeBytes } });
+    revalidatePath(`/records/${file.itemId}`);
     return { id };
   },
 });

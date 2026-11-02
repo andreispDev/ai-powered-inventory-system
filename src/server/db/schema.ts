@@ -290,6 +290,28 @@ export const item = pgTable(
   ],
 );
 
+/** Files attached to records. Kept in the database for now, and read without "data" when listing. */
+export const itemAttachment = pgTable(
+  "item_attachment",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    officeId: uuid("office_id").notNull(),
+    itemId: uuid("item_id").notNull(),
+    fileName: text("file_name").notNull(),
+    contentType: text("content_type").notNull(),
+    sizeBytes: integer("size_bytes").notNull(),
+    data: bytea("data").notNull(),
+    uploadedBy: uuid("uploaded_by")
+      .notNull()
+      .references(() => appUser.id),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("item_attachment_item_idx").on(t.itemId, t.createdAt.desc()),
+    foreignKey({ columns: [t.officeId, t.itemId], foreignColumns: [item.officeId, item.id] }),
+  ],
+);
+
 export const stockMovement = pgTable(
   "stock_movement",
   {

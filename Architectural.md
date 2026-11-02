@@ -237,6 +237,7 @@ erDiagram
 | `audit_log` | `office_id`, `actor_id`, `actor_role`, `action`, `entity_type`, `entity_id`, `before`, `after`, `request_id`, `ip`, `at` | Append-only |
 | `outbox` | `topic`, `payload`, `office_id`, `created_at`, `published_at` | |
 | `announcement`, `notification` | `audience`, `scheduled_at`, `urgency`; `user_id`, `read_at`, `acked_at`, unique `(announcement_id, user_id)` | Unique key gives exactly-once fan-out |
+| `item_attachment` | Record files, stored in PostgreSQL for now so they stay under RLS and in one backup. Moving to object storage later only changes the upload and download routes | |
 | `category.kind` | `stock` or `records`, fixed at creation. Records share the item table, so stock features filter by kind | |
 | `forecast` | `office_id`, `item_id`, `method`, `horizon`, `predicted_stockout_at`, `low`, `high`, `confidence`, `backtest_error`, `generated_at` | |
 | `embedding` | `office_id`, `source_type`, `source_id`, `content_hash`, `vector` | HNSW index |

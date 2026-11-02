@@ -1,7 +1,7 @@
 import "server-only";
 import { and, asc, count, desc, eq, ilike, isNotNull, isNull, or, sql, type SQL } from "drizzle-orm";
 import { isNumeric, type FieldDef } from "@/modules/categories/field-schema";
-import { appUser, category, item, office, stockMovement } from "@/server/db/schema";
+import { appUser, category, item, itemAttachment, office, stockMovement } from "@/server/db/schema";
 import { itemIsKind, type CategoryKind } from "./kinds";
 import type { ScopedTx } from "@/server/db/scope";
 
@@ -124,6 +124,20 @@ export const listMovements = (tx: ScopedTx, itemId: string) =>
     .where(eq(stockMovement.itemId, itemId))
     .orderBy(desc(stockMovement.occurredAt), desc(stockMovement.id))
     .limit(50);
+
+export const listAttachments = (tx: ScopedTx, itemId: string) =>
+  tx
+    .select({
+      id: itemAttachment.id,
+      fileName: itemAttachment.fileName,
+      sizeBytes: itemAttachment.sizeBytes,
+      createdAt: itemAttachment.createdAt,
+      uploadedByName: appUser.name,
+    })
+    .from(itemAttachment)
+    .leftJoin(appUser, eq(itemAttachment.uploadedBy, appUser.id))
+    .where(eq(itemAttachment.itemId, itemId))
+    .orderBy(desc(itemAttachment.createdAt));
 
 export const listPeople = (tx: ScopedTx) =>
   tx

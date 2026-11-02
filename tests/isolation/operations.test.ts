@@ -3,6 +3,7 @@ import { and, eq, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/pglite";
 import { migrate } from "drizzle-orm/pglite/migrator";
 import { beforeAll, describe, expect, it } from "vitest";
+import { checkAttachment, cleanFileName, downloadHeader, MAX_ATTACHMENT_BYTES } from "@/modules/inventory/attachment-file";
 import { parseImage } from "@/modules/preferences/image";
 import * as schema from "@/server/db/schema";
 import {
@@ -528,5 +529,48 @@ describe("custom records", () => {
     const stock = sql`exists (select 1 from category c where c.id = ${item.categoryId} and c.kind = 'stock')`;
     expect(await db.select().from(item).where(and(eq(item.id, RECORD), stock))).toEqual([]);
     await asApp(scopeB, async (tx) => expect(await tx.select().from(item).where(eq(item.id, RECORD))).toEqual([]));
+  });
+});
+
+describe("record files", () => {
+  const PDF = Buffer.from("%PDF-1.7 test");
+  const CAT = id("c6");
+  const RECORD = id("f8");
+  const file = { officeId: A, itemId: RECORD, fileName: "a.pdf", contentType: "application/pdf", sizeBytes: PDF.length, data: PDF, uploadedBy: ADMIN_A };
+
+  beforeAll(async () => {
+    await db.insert(category).values({ id: CAT, officeId: A, name: "Papers", kind: "records" });
+    await db.insert(item).values({ id: RECORD, officeId: A, categoryId: CAT, name: "Paper" });
+  });
+
+  it("are private to their office, and can't be edited", async () => {
+    const [row] = await asApp(scopeA, (tx) => tx.insert(schema.itemAttachment).values(file).returning());
+    await asApp(scopeA, async (tx) => expect(await tx.select().from(schema.itemAttachment)).toHaveLength(1));
+    await asApp(platform, async (tx) => expect(await tx.select().from(schema.itemAttachment)).toHaveLength(1));
+    await asApp(scopeB, async (tx) => expect(await tx.select().from(schema.itemAttachment)).toEqual([]));
+    await asApp(scopeB, (tx) => tx.delete(schema.itemAttachment).where(eq(schema.itemAttachment.id, row.id)));
+    expect(await db.select().from(schema.itemAttachment)).toHaveLength(1);
+    expect(await failure(asApp(scopeB, (tx) => tx.insert(schema.itemAttachment).values(file)))).not.toBeNull();
+    expect(await failure(asApp(platform, (tx) => tx.insert(schema.itemAttachment).values(file)))).not.toBeNull();
+    expect(await failure(asApp(scopeA, (tx) => tx.update(schema.itemAttachment).set({ fileName: "x.pdf" })))).not.toBeNull();
+  });
+
+  it("are checked by their real contents", () => {
+    expect(checkAttachment("Audit.PDF", PDF)).toEqual({ name: "Audit.PDF", type: "application/pdf" });
+    expect(checkAttachment("notes.txt", Buffer.from("hello"))).toMatchObject({ type: "text/plain" });
+    expect(checkAttachment("fake.pdf", Buffer.from("<script>"))).toHaveProperty("error");
+    expect(checkAttachment("page.html", Buffer.from("<script>"))).toHaveProperty("error");
+    expect(checkAttachment("logo.svg", Buffer.from("<svg onload=x>"))).toHaveProperty("error");
+    expect(checkAttachment("run.exe", Buffer.from("MZ"))).toHaveProperty("error");
+    expect(checkAttachment("pdf", PDF)).toHaveProperty("error");
+    expect(checkAttachment("empty.pdf", Buffer.alloc(0))).toHaveProperty("error");
+    expect(checkAttachment("big.pdf", Buffer.concat([PDF, Buffer.alloc(MAX_ATTACHMENT_BYTES)]))).toHaveProperty("error");
+  });
+
+  it("have safe names", () => {
+    expect(cleanFileName("..\\..\\windows/evil.pdf")).toBe("evil.pdf");
+    expect(cleanFileName('a"\r\nSet-Cookie: x.pdf')).toBe("aSet-Cookie: x.pdf");
+    expect(cleanFileName(`${"x".repeat(300)}.pdf`)).toHaveLength(200);
+    expect(downloadHeader('a b"\r\n.pdf')).not.toMatch(/[\r\n"]/);
   });
 });

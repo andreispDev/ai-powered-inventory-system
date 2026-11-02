@@ -49,6 +49,8 @@ const nextConfig: NextConfig = {
           { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" },
         ],
       },
+      // Last, so it wins: a downloaded file can't run anything if it's ever opened directly.
+      { source: "/api/attachments/:id", headers: [{ key: "Content-Security-Policy", value: "sandbox; default-src 'none'" }] },
     ];
   },
 };

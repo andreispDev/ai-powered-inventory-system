@@ -19,9 +19,10 @@ import { ForecastBadge, StockoutDate } from "@/modules/forecast/forecast-parts";
 import { getItemForecast } from "@/modules/forecast/queries";
 import { AssignDialog, ReturnButton, TransferDialog } from "@/modules/custody/custody-actions";
 import { listItemAssignments } from "@/modules/custody/queries";
+import { Attachments } from "@/modules/inventory/attachments";
 import { DeleteItemButton, MoveStockDialog, RestoreItemButton } from "@/modules/inventory/item-actions";
 import { formatAttribute, statusLabel } from "@/modules/inventory/format";
-import { getItem, listMovements, listPeople } from "@/modules/inventory/queries";
+import { getItem, listAttachments, listMovements, listPeople } from "@/modules/inventory/queries";
 import { requireActor } from "@/server/auth/session";
 import { writeAudit } from "@/server/audit/writer";
 import { appUser, auditLog } from "@/server/db/schema";
@@ -58,6 +59,7 @@ async function Content({ params }: Props) {
     const movements = await listMovements(tx, itemId);
     const people = await listPeople(tx);
     const assignments = await listItemAssignments(tx, itemId);
+    const attachments = row.kind === "records" ? await listAttachments(tx, itemId) : [];
     const prediction = can("ai.forecast.read") ? await getItemForecast(tx, itemId) : null;
     const offices = can("transfer.create")
       ? ((await tx.execute(sql`select id, name from office_directory()`)) as unknown as { rows: { id: string; name: string }[] }).rows
@@ -75,7 +77,7 @@ async function Content({ params }: Props) {
       .where(and(sql`${auditLog.entityType} = 'item'`, eq(auditLog.entityId, itemId), seesAll ? undefined : eq(auditLog.actorId, actor.id)))
       .orderBy(desc(auditLog.at))
       .limit(30);
-    return { ...row, fields, movements, people, activity, assignments, offices, prediction };
+    return { ...row, fields, movements, people, activity, assignments, offices, prediction, attachments };
   });
   if (!data) notFound();
 
@@ -205,6 +207,8 @@ async function Content({ params }: Props) {
           {item.notes && <p className="whitespace-pre-wrap text-sm">{item.notes}</p>}
         </CardContent>
       </Card>
+
+      {records && <Attachments itemId={item.id} files={data.attachments} canEdit={can("item.update") && !deleted} />}
 
       {!records && (
       <>

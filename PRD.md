@@ -120,6 +120,7 @@ Priority: **P0** is required for launch, **P1** follows soon after launch, **P2*
 | ORG-4 | Accounts have a status: invited, active, or deactivated. Accounts are never hard-deleted, so the audit trail stays complete | P0 |
 | ORG-5 | Profile pages show identity, role, office, last activity, and recent actions, to those allowed to view them | P0 |
 | ORG-8 | A category is either Stock items or Custom records, chosen when it is created. Records such as work papers have their own columns and page, and stay out of inventory counts, stock moves, predictions and alerts | P1 |
+| ORG-9 | Records can hold files (PDF, Office, text, CSV and images, up to 10 MB each and 20 per record). Files are checked by their contents, only download, and follow office separation | P1 |
 | ORG-7 | Admins set their office's workspace name and logo in Settings, and everyone can add a profile photo. Images are PNG, JPEG or WebP only | P1 |
 | ORG-6 | Moving a user to another office is a Developer action, is audited, and removes access to the old office immediately | P1 |
 
