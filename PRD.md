@@ -317,7 +317,7 @@ Full specification in [Design.md](Design.md).
 
 ## 7. Release plan
 
-**Status on 2026-11-02:** Phase 0 is done. Phase 1 is built and awaiting the pilot check. See "Not yet built" below.
+**Status on 2026-11-02:** Phases 0, 1 and 2 are built. Your pilot check is still open. See "Not yet built" below.
 
 | Phase | Scope | Exit criteria |
 |---|---|---|
@@ -328,7 +328,7 @@ Full specification in [Design.md](Design.md).
 | **4. Hardening and launch** | Load test, penetration test, restore rehearsal, accessibility audit, runbooks, rollout | All section 5 targets verified |
 | **5. Post-launch** | P1 and then P2 items | Driven by usage |
 
-**Not yet built, though listed as P0:** the permission grant screen (the engine and its rules exist, so grants have no UI yet), the command palette, breadcrumbs, the audit log screen (Phase 2), logging of Developer views, and phone card layouts for tables, which currently scroll sideways.
+**Not yet built, though listed as P0:** the command palette, breadcrumbs, per-person notification settings are P1, phone card layouts for tables (they scroll sideways), and error rate and response times on the health screen, which need the Phase 4 monitoring tools. Assignments go to a person; giving stock to another office is a transfer. Permission requests from admins (PERM-6, P1) aren't built, so a Developer grants access directly.
 
 ---
 

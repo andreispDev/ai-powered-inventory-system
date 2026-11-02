@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import {
+  bigint,
   bigserial,
   boolean,
   check,
@@ -33,7 +34,7 @@ export const officeStatusEnum = pgEnum("office_status", ["active", "archived"]);
 export const grantSubjectEnum = pgEnum("grant_subject", ["user", "office"]);
 export const grantEffectEnum = pgEnum("grant_effect", ["allow", "deny"]);
 export const itemStatusEnum = pgEnum("item_status", ["active", "in_repair", "retired", "lost"]);
-export const movementTypeEnum = pgEnum("movement_type", ["receive", "issue", "adjust", "return"]);
+export const movementTypeEnum = pgEnum("movement_type", ["receive", "issue", "adjust", "return", "transfer_out", "transfer_in"]);
 
 const tsvector = customType<{ data: string }>({ dataType: () => "tsvector" });
 
@@ -298,3 +299,133 @@ export const stockMovement = pgTable(
     foreignKey({ columns: [t.officeId, t.itemId], foreignColumns: [item.officeId, item.id] }),
   ],
 );
+
+export const transferStatusEnum = pgEnum("transfer_status", ["pending", "accepted", "rejected", "cancelled"]);
+
+export const assignment = pgTable(
+  "assignment",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    officeId: uuid("office_id").notNull(),
+    itemId: uuid("item_id").notNull(),
+    assigneeId: uuid("assignee_id")
+      .notNull()
+      .references(() => appUser.id),
+    assignedBy: uuid("assigned_by")
+      .notNull()
+      .references(() => appUser.id),
+    since: date("since").notNull(),
+    dueAt: date("due_at"),
+    returnedAt: timestamp("returned_at", { withTimezone: true }),
+    note: text("note"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("assignment_item_idx").on(t.officeId, t.itemId),
+    index("assignment_open_idx").on(t.officeId, t.dueAt).where(sql`${t.returnedAt} IS NULL`),
+    foreignKey({ columns: [t.officeId, t.itemId], foreignColumns: [item.officeId, item.id] }),
+  ],
+);
+
+export const transfer = pgTable(
+  "transfer",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    fromOfficeId: uuid("from_office_id")
+      .notNull()
+      .references(() => office.id),
+    toOfficeId: uuid("to_office_id")
+      .notNull()
+      .references(() => office.id),
+    // Copied here, so each office sees this transfer and nothing else about the other office.
+    fromOfficeName: text("from_office_name").notNull(),
+    toOfficeName: text("to_office_name").notNull(),
+    itemId: uuid("item_id").notNull(),
+    itemName: text("item_name").notNull(),
+    itemSku: text("item_sku"),
+    unit: text("unit").notNull(),
+    quantity: integer("quantity").notNull(),
+    status: transferStatusEnum("status").notNull().default("pending"),
+    note: text("note"),
+    requestedBy: uuid("requested_by")
+      .notNull()
+      .references(() => appUser.id),
+    requestedByName: text("requested_by_name").notNull(),
+    respondedByName: text("responded_by_name"),
+    respondedAt: timestamp("responded_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("transfer_from_idx").on(t.fromOfficeId, t.createdAt.desc()),
+    index("transfer_to_idx").on(t.toOfficeId, t.createdAt.desc()),
+    check("transfer_quantity_positive", sql`${t.quantity} > 0`),
+    check("transfer_two_offices", sql`${t.fromOfficeId} <> ${t.toOfficeId}`),
+  ],
+);
+
+export const announcement = pgTable(
+  "announcement",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    /** The sending office. Null when a Developer sends it. */
+    officeId: uuid("office_id").references(() => office.id),
+    audienceType: text("audience_type").notNull(),
+    audienceOfficeIds: uuid("audience_office_ids").array(),
+    audienceRole: roleEnum("audience_role"),
+    title: text("title").notNull(),
+    body: text("body").notNull(),
+    urgent: boolean("urgent").notNull().default(false),
+    scheduledAt: timestamp("scheduled_at", { withTimezone: true }),
+    sentAt: timestamp("sent_at", { withTimezone: true }),
+    createdBy: uuid("created_by")
+      .notNull()
+      .references(() => appUser.id),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("announcement_due_idx").on(t.scheduledAt).where(sql`${t.sentAt} IS NULL`)],
+);
+
+export const notification = pgTable(
+  "notification",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => appUser.id),
+    kind: text("kind").notNull(),
+    title: text("title").notNull(),
+    body: text("body"),
+    link: text("link"),
+    urgent: boolean("urgent").notNull().default(false),
+    announcementId: uuid("announcement_id").references(() => announcement.id),
+    /** Stops the same event notifying someone twice */
+    dedupeKey: text("dedupe_key").notNull(),
+    readAt: timestamp("read_at", { withTimezone: true }),
+    ackedAt: timestamp("acked_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("notification_once_idx").on(t.userId, t.dedupeKey),
+    index("notification_user_idx").on(t.userId, t.createdAt.desc()),
+  ],
+);
+
+export const jobRun = pgTable(
+  "job_run",
+  {
+    id: bigserial("id", { mode: "bigint" }).primaryKey(),
+    queue: text("queue").notNull(),
+    name: text("name").notNull(),
+    status: text("status").notNull(),
+    error: text("error"),
+    durationMs: integer("duration_ms"),
+    at: timestamp("at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("job_run_at_idx").on(t.at.desc())],
+);
+
+export const auditCheckpoint = pgTable("audit_checkpoint", {
+  upToId: bigint("up_to_id", { mode: "bigint" }).primaryKey(),
+  hash: text("hash").notNull(),
+  at: timestamp("at", { withTimezone: true }).notNull().defaultNow(),
+});

@@ -12,10 +12,13 @@
     "test": "vitest run",
     "db:generate": "drizzle-kit generate",
     "db:setup": "node --env-file=.env.local scripts/db-setup.ts",
-    "bootstrap:developer": "node --env-file=.env.local scripts/bootstrap-developer.ts"
+    "bootstrap:developer": "node --env-file=.env.local scripts/bootstrap-developer.ts",
+    "dev:worker": "tsx watch --env-file=.env.local src/worker/index.ts",
+    "start:worker": "tsx --env-file=.env.local src/worker/index.ts"
   },
   "dependencies": {
     "better-auth": "^1.7.15",
+    "bullmq": "^6.5.3",
     "class-variance-authority": "^0.7.1",
     "cmdk": "^1.1.1",
     "cn": "^0.5.2",
@@ -47,6 +50,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.4.3",
     "tailwindcss": "^4",
+    "tsx": "^4.23.15",
     "typescript": "^5",
     "vitest": "^5.0.5"
   }

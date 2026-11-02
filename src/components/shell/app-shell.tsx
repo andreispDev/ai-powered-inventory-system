@@ -5,6 +5,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import { OfflineBanner, ConnectionIndicator } from "@/components/connectivity/connectivity";
+import { NotificationBell, UrgentBanner } from "@/components/shell/notifications";
+import { RealtimeProvider } from "@/components/providers/realtime-provider";
 import { Confirm } from "@/components/feedback/confirm";
 import { useAppearance } from "@/components/providers/appearance-provider";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -239,6 +241,7 @@ function UserMenu({ user }: { user: ShellUser }) {
 
 export function AppShell({ user, children }: { user: ShellUser; children: ReactNode }) {
   return (
+    <RealtimeProvider>
     <SidebarProvider>
       <PreferenceSync saved={user.preferences as Appearance | null} />
       <a
@@ -253,15 +256,18 @@ export function AppShell({ user, children }: { user: ShellUser; children: ReactN
           <SidebarTrigger aria-label="Toggle sidebar" />
           <div className="ml-auto flex items-center gap-1">
             <ConnectionIndicator />
+            <NotificationBell />
             <AppearanceMenu />
             <UserMenu user={user} />
           </div>
         </header>
         <OfflineBanner />
+        <UrgentBanner />
         <main id="main" className="app-canvas flex-1 px-4 py-6 md:px-6 lg:px-8">
           {children}
         </main>
       </SidebarInset>
     </SidebarProvider>
+    </RealtimeProvider>
   );
 }

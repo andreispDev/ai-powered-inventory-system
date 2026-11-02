@@ -345,7 +345,7 @@ Validated by `server/env.ts` at boot, so a bad deploy fails immediately. `.env.e
 | Script | Purpose |
 |---|---|
 | `dev` | Next.js dev server |
-| `dev:worker` | Worker with reload |
+| `dev:worker` | Worker with reload. Needed for notifications, announcements and live updates |
 | `build`, `start` | Production web |
 | `start:worker` | Production worker |
 | `lint`, `typecheck` | Static checks |

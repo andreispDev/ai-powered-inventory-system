@@ -12,10 +12,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { listFields } from "@/modules/categories/queries";
+import { AssignDialog, ReturnButton, TransferDialog } from "@/modules/custody/custody-actions";
+import { listItemAssignments } from "@/modules/custody/queries";
 import { DeleteItemButton, MoveStockDialog, RestoreItemButton } from "@/modules/inventory/item-actions";
 import { formatAttribute, statusLabel } from "@/modules/inventory/format";
 import { getItem, listMovements, listPeople } from "@/modules/inventory/queries";
 import { requireActor } from "@/server/auth/session";
+import { writeAudit } from "@/server/audit/writer";
 import { appUser, auditLog } from "@/server/db/schema";
 import { readScoped } from "@/server/guard/read";
 
@@ -48,7 +51,15 @@ async function Content({ params }: Props) {
     if (!row) return null;
     const fields = await listFields(tx, row.item.categoryId, true);
     const movements = await listMovements(tx, itemId);
-    const people = fields.some((field) => field.type === "person") ? await listPeople(tx) : [];
+    const people = await listPeople(tx);
+    const assignments = await listItemAssignments(tx, itemId);
+    const offices = can("transfer.create")
+      ? ((await tx.execute(sql`select id, name from office_directory()`)) as unknown as { rows: { id: string; name: string }[] }).rows
+      : [];
+    // A Developer looking at office data is itself on the record.
+    if (actor.role === "developer") {
+      await writeAudit(tx, { actor, action: "platform.viewed", entityType: "item", entityId: itemId, officeId: row.item.officeId });
+    }
     // Users see only their own actions here, and admins and Developers see everything.
     const seesAll = can("audit.read.office") || can("audit.read.all");
     const activity = await tx
@@ -58,7 +69,7 @@ async function Content({ params }: Props) {
       .where(and(sql`${auditLog.entityType} = 'item'`, eq(auditLog.entityId, itemId), seesAll ? undefined : eq(auditLog.actorId, actor.id)))
       .orderBy(desc(auditLog.at))
       .limit(30);
-    return { ...row, fields, movements, people, activity };
+    return { ...row, fields, movements, people, activity, assignments, offices };
   });
   if (!data) notFound();
 
@@ -79,6 +90,15 @@ async function Content({ params }: Props) {
           ) : (
             <>
               {can("stock.move") && <MoveStockDialog itemId={item.id} unit={item.unit} quantity={item.quantity} />}
+              {can("assignment.manage") && <AssignDialog itemId={item.id} people={data.people} />}
+              {can("transfer.create") && (
+                <TransferDialog
+                  itemId={item.id}
+                  unit={item.unit}
+                  quantity={item.quantity}
+                  offices={data.offices.filter((office) => office.id !== item.officeId)}
+                />
+              )}
               {can("item.update") && (
                 <Button variant="outline" asChild>
                   <Link href={`/inventory/${item.id}/edit`}>Edit</Link>
@@ -142,6 +162,37 @@ async function Content({ params }: Props) {
 
       <Card className="gap-3">
         <CardHeader>
+          <CardTitle>Custody</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {data.assignments.length === 0 ? (
+            <p className="text-muted-foreground text-sm">Not assigned to anyone.</p>
+          ) : (
+            <ul className="divide-y text-sm">
+              {data.assignments.map((entry) => (
+                <li key={entry.id} className="flex flex-wrap items-center justify-between gap-3 py-2">
+                  <span>
+                    <span className="font-medium">{entry.assigneeName}</span>
+                    <span className="text-muted-foreground">
+                      {" "}
+                      since {entry.since}, by {entry.assignedByName}
+                      {entry.dueAt ? ` · due ${entry.dueAt}` : ""}
+                    </span>
+                  </span>
+                  {entry.returnedAt ? (
+                    <Badge variant="outline">Returned</Badge>
+                  ) : (
+                    can("assignment.manage") && <ReturnButton id={entry.id} name={entry.assigneeName} />
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card className="gap-3">
+        <CardHeader>
           <CardTitle>Stock history</CardTitle>
         </CardHeader>
         <CardContent>
@@ -165,7 +216,7 @@ async function Content({ params }: Props) {
                     <TableCell>
                       <LocalTime date={movement.occurredAt} />
                     </TableCell>
-                    <TableCell className="capitalize">{movement.type}</TableCell>
+                    <TableCell className="capitalize">{movement.type.replace("_", " ")}</TableCell>
                     <TableCell className="text-right tabular-nums">
                       {movement.delta > 0 ? "+" : ""}
                       {movement.delta}

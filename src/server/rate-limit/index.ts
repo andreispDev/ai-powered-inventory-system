@@ -16,6 +16,22 @@ redis.call('PEXPIRE', KEYS[1], ARGV[2])
 return 0
 `;
 
+/** A short-lived connection, for pages that read Redis now and then. */
+export async function withRedis<T>(fn: (redis: Redis) => Promise<T>): Promise<T | null> {
+  const url = process.env.REDIS_URL;
+  if (!url) return null;
+  const redis = new Redis(url, { lazyConnect: true, maxRetriesPerRequest: 1, connectTimeout: 2000, retryStrategy: () => null });
+  redis.on("error", () => {});
+  try {
+    await redis.connect();
+    return await fn(redis);
+  } catch {
+    return null;
+  } finally {
+    redis.disconnect();
+  }
+}
+
 let client: Redis | null | undefined;
 
 function getRedis() {

@@ -36,6 +36,20 @@
       "when": 1793618632694,
       "tag": "0004_inventory_security",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1793621717215,
+      "tag": "0005_operations",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793621720000,
+      "tag": "0006_operations_security",
+      "breakpoints": true
     }
   ]
 }

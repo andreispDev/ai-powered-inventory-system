@@ -6,7 +6,7 @@ import { writeAudit, type AuditEntry } from "../audit/writer";
 import { getActor, scopeOf, type Actor } from "../auth/session";
 import type { Permission } from "../authz/catalog";
 import { getDb } from "../db/client";
-import { idempotencyKey } from "../db/schema";
+import { idempotencyKey, outbox } from "../db/schema";
 import { runScoped, type ScopedTx } from "../db/scope";
 import { checkLimit } from "../rate-limit";
 import type { LimitClass } from "../rate-limit/limits";
@@ -18,6 +18,8 @@ type Context<I> = {
   tx: ScopedTx;
   /** Records the change in this transaction */
   audit: (entry: Omit<AuditEntry, "actor" | "requestId" | "ip">) => Promise<void>;
+  /** Queues an event in this transaction, so it's sent only if the change commits */
+  emit: (topic: string, payload: Record<string, unknown>) => Promise<void>;
 };
 
 /**
@@ -85,7 +87,24 @@ export function guard<S extends z.ZodType, R>(config: {
           input: parsed.data,
           actor,
           tx,
-          audit: (entry) => writeAudit(tx, { ...entry, actor, requestId, ip }),
+          audit: async (entry) => {
+            await writeAudit(tx, { ...entry, actor, requestId, ip });
+            const officeId = entry.officeId === undefined ? actor.officeId : entry.officeId;
+            await tx.insert(outbox).values({
+              topic: "activity",
+              officeId,
+              payload: {
+                action: entry.action,
+                entityType: entry.entityType,
+                entityId: entry.entityId,
+                actorName: actor.name,
+                at: new Date().toISOString(),
+              },
+            });
+          },
+          emit: async (topic, payload) => {
+            await tx.insert(outbox).values({ topic, payload, officeId: actor.officeId });
+          },
         });
 
         if (retryKey) {

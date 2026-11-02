@@ -23,10 +23,13 @@ export type Actor = {
 };
 
 /** Loaded fresh on every request, so revoked access ends immediately. Memoized within one render. */
-export const getActor = cache(async (): Promise<Actor | null> => {
+export const getActor = cache(async (): Promise<Actor | null> => actorFromHeaders(await headers()));
+
+/** For long-lived connections, which must recheck the session as time passes. */
+export async function actorFromHeaders(requestHeaders: Headers): Promise<Actor | null> {
   if (!isConfigured()) return null;
 
-  const result = await getAuth().api.getSession({ headers: await headers() });
+  const result = await getAuth().api.getSession({ headers: requestHeaders });
   if (!result || isPastAbsoluteLimit(result.session.createdAt)) return null;
 
   const db = getAuthDb();
@@ -58,7 +61,7 @@ export const getActor = cache(async (): Promise<Actor | null> => {
     permissions: effectivePermissions(user.role, grants),
     preferences: user.preferences,
   };
-});
+}
 
 export async function requireActor(): Promise<Actor> {
   const actor = await getActor();

@@ -72,6 +72,10 @@ export function isAllowed(role: Role, permission: Permission, grants: Grant[], n
   );
 }
 
+export const canEverHold = (role: Role, permission: Permission) => RANK[role] >= RANK[(CATALOG[permission] as Entry).minRole];
+
+export const roleDefault = (role: Role, permission: Permission) => (CATALOG[permission] as Entry).defaults.includes(role);
+
 export function effectivePermissions(role: Role, grants: Grant[], now = new Date()): Permission[] {
   return PERMISSIONS.filter((permission) => isAllowed(role, permission, grants, now));
 }

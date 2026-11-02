@@ -12,6 +12,7 @@ import { AccountForm } from "@/modules/accounts/account-form";
 import { ArchiveOfficeButton } from "@/modules/offices/archive-button";
 import { OfficeForm } from "@/modules/offices/office-form";
 import { requireActor } from "@/server/auth/session";
+import { writeAudit } from "@/server/audit/writer";
 import { appUser, office } from "@/server/db/schema";
 import { readScoped } from "@/server/guard/read";
 
@@ -27,6 +28,7 @@ async function Content({ params }: Props) {
 
   const data = await readScoped(actor, async (tx) => {
     const [row] = await tx.select().from(office).where(eq(office.id, officeId));
+    if (row) await writeAudit(tx, { actor, action: "platform.viewed", entityType: "office", entityId: officeId, officeId });
     const people = await tx
       .select({ id: appUser.id, name: appUser.name, email: appUser.email, role: appUser.role, status: appUser.status })
       .from(appUser)

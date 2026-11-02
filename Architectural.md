@@ -234,7 +234,7 @@ erDiagram
 | `stock_movement` | `office_id`, `item_id`, `type`, `delta`, `balance_after`, `reason`, `actor_id`, `occurred_at` | Append-only, partitioned monthly |
 | `assignment` | `office_id`, `item_id`, `assignee_type`, `assignee_id`, `assigned_by`, `since`, `due_at`, `returned_at` | |
 | `transfer` | `from_office_id`, `to_office_id`, `item_id`, `quantity`, `status`, timestamps | |
-| `audit_log` | `office_id`, `actor_id`, `actor_role`, `action`, `entity_type`, `entity_id`, `before`, `after`, `request_id`, `ip`, `prev_hash`, `hash`, `at` | Append-only, partitioned monthly |
+| `audit_log` | `office_id`, `actor_id`, `actor_role`, `action`, `entity_type`, `entity_id`, `before`, `after`, `request_id`, `ip`, `at` | Append-only |
 | `outbox` | `topic`, `payload`, `office_id`, `created_at`, `published_at` | |
 | `announcement`, `notification` | `audience`, `scheduled_at`, `urgency`; `user_id`, `read_at`, `acked_at`, unique `(announcement_id, user_id)` | Unique key gives exactly-once fan-out |
 | `forecast` | `office_id`, `item_id`, `method`, `horizon`, `predicted_stockout_at`, `low`, `high`, `confidence`, `backtest_error`, `generated_at` | |
@@ -258,7 +258,7 @@ Field definitions live in `category_field`, and values in `item.attributes` JSON
 - `item.quantity` changes only by inserting into `stock_movement`, in the same transaction, under a row lock. A `CHECK` stops negative stock.
 - `item.version` provides optimistic concurrency. A mismatch returns `CONFLICT`, and the UI shows the differences (PRD INV-5).
 - Database triggers reject `UPDATE`/`DELETE` on `audit_log` and `stock_movement`, and the app role has no such grants.
-- Each audit row's `hash` covers its content and the previous hash, per office. A scheduled job verifies the chain and alerts on a break. Hash chains serialize writes per office, so the hash is computed by the worker in batches, not in the write transaction. A periodic checkpoint hash is also stored outside the database.
+- A scheduled job extends a SHA-256 chain over audit rows and stores checkpoints in `audit_checkpoint`, so rows stay append-only. A nightly job recomputes it and sends Developers an urgent alert on any mismatch. Monthly partitions on `audit_log` and `stock_movement` aren't in place yet.
 
 ---
 
