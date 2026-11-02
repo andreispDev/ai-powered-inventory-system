@@ -63,12 +63,12 @@ export function CommandPalette({ permissions }: { permissions: readonly Permissi
 
   return (
     <>
-      <Button variant="outline" className="text-muted-foreground hidden w-56 justify-start gap-2 sm:inline-flex" onClick={() => setOpen(true)}>
+      <Button variant="outline" className="text-muted-foreground hidden w-56 justify-start gap-2 lg:inline-flex" onClick={() => setOpen(true)}>
         <Search aria-hidden />
         <span className="flex-1 text-left">Search…</span>
         <kbd className="bg-muted rounded px-1.5 font-mono text-[0.625rem]">Ctrl K</kbd>
       </Button>
-      <Button variant="ghost" size="icon" className="sm:hidden" aria-label="Search" onClick={() => setOpen(true)}>
+      <Button variant="ghost" size="icon" className="lg:hidden" aria-label="Search" onClick={() => setOpen(true)}>
         <Search aria-hidden />
       </Button>
       <CommandDialog open={open} onOpenChange={setOpen} title="Search" description="Find a page or record">

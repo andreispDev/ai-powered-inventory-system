@@ -12,6 +12,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { listFields } from "@/modules/categories/queries";
+import { formatForecastDay } from "@/modules/forecast/engine";
+import { ForecastBadge, StockoutDate } from "@/modules/forecast/forecast-parts";
+import { getItemForecast } from "@/modules/forecast/queries";
 import { AssignDialog, ReturnButton, TransferDialog } from "@/modules/custody/custody-actions";
 import { listItemAssignments } from "@/modules/custody/queries";
 import { DeleteItemButton, MoveStockDialog, RestoreItemButton } from "@/modules/inventory/item-actions";
@@ -53,6 +56,7 @@ async function Content({ params }: Props) {
     const movements = await listMovements(tx, itemId);
     const people = await listPeople(tx);
     const assignments = await listItemAssignments(tx, itemId);
+    const prediction = can("ai.forecast.read") ? await getItemForecast(tx, itemId) : null;
     const offices = can("transfer.create")
       ? ((await tx.execute(sql`select id, name from office_directory()`)) as unknown as { rows: { id: string; name: string }[] }).rows
       : [];
@@ -69,7 +73,7 @@ async function Content({ params }: Props) {
       .where(and(sql`${auditLog.entityType} = 'item'`, eq(auditLog.entityId, itemId), seesAll ? undefined : eq(auditLog.actorId, actor.id)))
       .orderBy(desc(auditLog.at))
       .limit(30);
-    return { ...row, fields, movements, people, activity, assignments, offices };
+    return { ...row, fields, movements, people, activity, assignments, offices, prediction };
   });
   if (!data) notFound();
 
@@ -110,6 +114,35 @@ async function Content({ params }: Props) {
           )
         }
       />
+
+      {data.prediction && !deleted && (
+        <Card>
+          <CardHeader className="flex flex-wrap items-center justify-between gap-2">
+            <CardTitle>Prediction</CardTitle>
+            <ForecastBadge state={data.prediction.state} confidence={data.prediction.confidence} />
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            <p>{data.prediction.reason}</p>
+            {data.prediction.stockoutAt && (
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <p className="text-muted-foreground">Runs out</p>
+                  <StockoutDate day={data.prediction.stockoutAt} earliest={data.prediction.stockoutEarliest} latest={data.prediction.stockoutLatest} />
+                </div>
+                {data.prediction.reorderQuantity && data.prediction.reorderBy && (
+                  <div>
+                    <p className="text-muted-foreground">Suggestion</p>
+                    <span className="font-medium">
+                      Order {data.prediction.reorderQuantity} {item.unit} by {formatForecastDay(data.prediction.reorderBy)}
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+            <p className="text-muted-foreground text-xs">This is advice only. Nothing changes automatically.</p>
+          </CardContent>
+        </Card>
+      )}
 
       <div className={`grid gap-4 ${isOff("location") ? "sm:grid-cols-2" : "sm:grid-cols-3"}`}>
         <Card>

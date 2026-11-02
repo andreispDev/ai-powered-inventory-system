@@ -6,6 +6,7 @@ import {
   check,
   customType,
   date,
+  doublePrecision,
   foreignKey,
   index,
   integer,
@@ -302,6 +303,34 @@ export const stockMovement = pgTable(
   },
   (t) => [
     index("stock_movement_item_idx").on(t.officeId, t.itemId, t.occurredAt.desc()),
+    foreignKey({ columns: [t.officeId, t.itemId], foreignColumns: [item.officeId, item.id] }),
+  ],
+);
+
+/** The latest forecast for each item. Written only by the background worker. */
+export const forecast = pgTable(
+  "forecast",
+  {
+    itemId: uuid("item_id").primaryKey(),
+    officeId: uuid("office_id").notNull(),
+    state: text("state").notNull(),
+    method: text("method"),
+    weeklyDemand: doublePrecision("weekly_demand"),
+    weeklyLow: doublePrecision("weekly_low"),
+    weeklyHigh: doublePrecision("weekly_high"),
+    stockoutAt: date("stockout_at"),
+    stockoutEarliest: date("stockout_earliest"),
+    stockoutLatest: date("stockout_latest"),
+    reorderQuantity: integer("reorder_quantity"),
+    reorderBy: date("reorder_by"),
+    confidence: text("confidence").$type<"high" | "medium" | "low">(),
+    backtestError: doublePrecision("backtest_error"),
+    baselineError: doublePrecision("baseline_error"),
+    reason: text("reason").notNull(),
+    generatedAt: timestamp("generated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("forecast_office_stockout_idx").on(t.officeId, t.stockoutAt),
     foreignKey({ columns: [t.officeId, t.itemId], foreignColumns: [item.officeId, item.id] }),
   ],
 );

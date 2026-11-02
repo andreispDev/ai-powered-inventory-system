@@ -85,6 +85,20 @@
       "when": 1793631234638,
       "tag": "0011_branding_security",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1793633141321,
+      "tag": "0012_forecast",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1793633143373,
+      "tag": "0013_forecast_security",
+      "breakpoints": true
     }
   ]
 }

@@ -4,6 +4,7 @@ import { asc, isNull, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import Redis from "ioredis";
 import { Pool } from "pg";
+import { createOllama } from "../server/ai/ollama";
 import * as schema from "../server/db/schema";
 import { jobRun, outbox } from "../server/db/schema";
 import { runScoped, type ScopedTx } from "../server/db/scope";
@@ -15,6 +16,7 @@ import {
   scanReminders,
   verifyAudit,
 } from "./events";
+import { draftForecasts, explainForecasts, saveForecasts } from "./forecasts";
 
 const required = (name: string) => {
   const value = process.env[name];
@@ -113,6 +115,12 @@ const HANDLERS: Record<string, () => Promise<void>> = {
     await alertPeople([...new Set([...sent.values()].flat())]);
   },
   [JOBS.reminders]: async () => alertPeople([...new Set(await asWorker((tx) => scanReminders(tx)))]),
+  [JOBS.forecast]: async () => {
+    const drafts = await asWorker((tx) => draftForecasts(tx));
+    // Outside any transaction: the AI can take a while, and failing only keeps the plain wording.
+    await explainForecasts(drafts, createOllama());
+    await alertPeople([...new Set(await asWorker((tx) => saveForecasts(tx, drafts)))]);
+  },
   [JOBS.auditCheckpoint]: async () => {
     await asWorker(checkpointAudit);
   },
@@ -151,7 +159,9 @@ async function main() {
   await queue.upsertJobScheduler("reminders", { every: 3_600_000 }, { name: JOBS.reminders, opts: defaults });
   await queue.upsertJobScheduler("audit-checkpoint", { every: 600_000 }, { name: JOBS.auditCheckpoint, opts: defaults });
   await queue.upsertJobScheduler("audit-verify", { pattern: "0 2 * * *" }, { name: JOBS.auditVerify, opts: defaults });
+  await queue.upsertJobScheduler("forecast", { pattern: "0 1 * * *" }, { name: JOBS.forecast, opts: defaults });
   await queue.add(JOBS.auditCheckpoint, {}, defaults);
+  await queue.add(JOBS.forecast, {}, defaults);
 
   const heartbeat = () => redis.set(WORKER_HEARTBEAT_KEY, new Date().toISOString(), "EX", 60).catch(() => {});
   void heartbeat();

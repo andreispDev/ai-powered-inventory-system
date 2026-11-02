@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { backtest, forecastItem, holt, keepsTheNumbers, startOfWeek, tsb, type ForecastInput } from "@/modules/forecast/engine";
 import { canStartSession, isPastAbsoluteLimit } from "@/server/auth/sign-in-rules";
 import { effectivePermissions, isAllowed, type Grant } from "@/server/authz/catalog";
 import { contrast, themeTokens, THEMES, type Oklch } from "@/lib/theme-tokens";
@@ -112,4 +113,73 @@ describe("themes", () => {
       });
     }
   }
+});
+
+describe("stock forecasts", () => {
+  const now = new Date("2026-11-04T12:00:00Z"); // A Wednesday
+  const weeksAgo = (weeks: number) => new Date(startOfWeek(now).getTime() - weeks * 7 * 86_400_000);
+  const input = (usage: number[], over: Partial<ForecastInput> = {}): ForecastInput => ({
+    quantity: 20,
+    unit: "pcs",
+    firstMovementAt: weeksAgo(usage.length),
+    demandMovements: usage.filter(Boolean).length,
+    demandByWeek: Object.fromEntries(usage.map((used, index) => [weeksAgo(usage.length - index).toISOString().slice(0, 10), used])),
+    ...over,
+  });
+
+  it("predicts steady use and when it runs out", () => {
+    const result = forecastItem(input(Array(12).fill(5)), now);
+    expect(result).toMatchObject({ state: "ready", method: "holt", weeklyDemand: 5, stockoutAt: "2026-12-02", confidence: "high" });
+    expect(result.reorderQuantity).toBeGreaterThan(0);
+    expect(result.reason).toContain("5 pcs a week");
+  });
+
+  it("handles stock used only in some weeks", () => {
+    const result = forecastItem(input([6, 0, 0, 6, 0, 0, 6, 0, 0, 6, 0, 0, 6, 0, 6]), now);
+    expect(result.method).toBe("tsb");
+    expect(result.weeklyDemand).toBeGreaterThan(1);
+    expect(result.weeklyDemand).toBeLessThan(4);
+  });
+
+  it("says so instead of guessing with too little history", () => {
+    expect(forecastItem(input([5, 5, 5]), now).state).toBe("not_enough_history");
+    expect(forecastItem(input(Array(12).fill(0).map((_, i) => (i % 4 === 3 ? 1 : 0))), now).state).toBe("not_enough_history");
+    expect(forecastItem(input([], { firstMovementAt: null }), now).state).toBe("not_enough_history");
+    expect(forecastItem(input([5, 5, 5]), now).stockoutAt).toBeNull();
+  });
+
+  it("marks stock nobody has used lately as slow moving", () => {
+    expect(forecastItem(input([3, 3, 3, 3, 3, ...Array(8).fill(0)]), now).state).toBe("slow");
+  });
+
+  it("ignores the unfinished current week", () => {
+    const usage = input(Array(12).fill(5));
+    usage.demandByWeek[startOfWeek(now).toISOString().slice(0, 10)] = 500;
+    expect(forecastItem(usage, now).weeklyDemand).toBe(5);
+  });
+
+  it("gives no date beyond a year, and an out-of-stock item runs out today", () => {
+    expect(forecastItem(input(Array(12).fill(1), { quantity: 1000 }), now).stockoutAt).toBeNull();
+    expect(forecastItem(input(Array(12).fill(5), { quantity: 0 }), now).stockoutAt).toBe("2026-11-04");
+  });
+
+  it("marks forecasts that lose to the simple baseline as low confidence", () => {
+    const repeating = [0, 0, 0, 40, 0, 0, 0, 40, 0, 0, 0, 40, 0, 0, 0, 40];
+    const { error, baselineError } = backtest(repeating, tsb);
+    expect(error).toBeGreaterThan(baselineError);
+    expect(forecastItem(input(repeating, { demandMovements: 5 }), now).confidence).toBe("low");
+  });
+
+  it("never predicts negative use", () => {
+    expect(holt.predictNext([50, 30, 10, 0, 0])).toBeGreaterThanOrEqual(0);
+    expect(tsb.predictNext([0, 0, 0])).toBe(0);
+  });
+
+  it("rejects AI wording that changes a number", () => {
+    const note = "Uses about 5 units a week, and 20 are left. Expect to run out around 2 Dec 2026.";
+    expect(keepsTheNumbers(note, "With 20 left at about 5 a week, this runs out near 2 Dec 2026.")).toBe(true);
+    expect(keepsTheNumbers(note, "With 25 left at about 5 a week, this runs out near 2 Dec 2026.")).toBe(false);
+    expect(keepsTheNumbers(note, "This runs out soon.")).toBe(false);
+    expect(keepsTheNumbers(note, "")).toBe(false);
+  });
 });

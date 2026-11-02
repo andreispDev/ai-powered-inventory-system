@@ -10,6 +10,9 @@ import { WelcomeBanner } from "@/components/shell/welcome-banner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { countCategories } from "@/modules/categories/queries";
+import { formatForecastDay } from "@/modules/forecast/engine";
+import { ForecastBadge } from "@/modules/forecast/forecast-parts";
+import { listSoonestStockouts } from "@/modules/forecast/queries";
 import { inventoryBreakdown, inventoryStats, listOutOfStock } from "@/modules/inventory/queries";
 import { ITEM_STATUSES } from "@/modules/inventory/schemas";
 import { requireActor } from "@/server/auth/session";
@@ -71,7 +74,8 @@ async function Content() {
           .orderBy(desc(auditLog.at))
           .limit(8)
       : [];
-    return { stats, outOfStock, breakdown, categories, people: people.total, offices: offices.total, activity, showActivity };
+    const stockouts = can("ai.forecast.read") ? await listSoonestStockouts(tx) : [];
+    return { stats, outOfStock, breakdown, categories, people: people.total, offices: offices.total, activity, showActivity, stockouts };
   });
 
   const value = Number(data.stats.value);
@@ -161,6 +165,32 @@ async function Content() {
           </CardContent>
         </Card>
       </div>
+
+      {data.stockouts.length > 0 && (
+        <Card>
+          <CardHeader className="flex items-center justify-between gap-2">
+            <CardTitle>Predicted to run out</CardTitle>
+            <Link href="/predictions" className="text-muted-foreground text-sm hover:underline">
+              All predictions
+            </Link>
+          </CardHeader>
+          <CardContent>
+            <ul className="divide-y text-sm">
+              {data.stockouts.map((row) => (
+                <li key={row.itemId} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 py-2">
+                  <Link href={`/inventory/${row.itemId}`} className="min-w-0 truncate hover:underline">
+                    {row.name}
+                  </Link>
+                  <span className="flex items-center gap-3">
+                    <span className="font-medium">{formatForecastDay(row.stockoutAt!)}</span>
+                    <ForecastBadge state="ready" confidence={row.confidence} />
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid items-start gap-6 lg:grid-cols-2">
         <Card>

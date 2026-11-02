@@ -18,6 +18,7 @@ const LABELS: Record<string, string> = {
   categories: "Categories",
   transfers: "Transfers",
   assignments: "Assignments",
+  predictions: "Predictions",
   accounts: "Accounts",
   offices: "Offices",
   permissions: "Permissions",

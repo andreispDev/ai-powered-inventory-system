@@ -21,7 +21,7 @@ const formatDay = (day: string | Date) =>
   new Date(day).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
 
 /** Creates each notification once, however often the event is retried. Returns who got a new one. */
-async function notify(tx: ScopedTx, userIds: string[], note: Note): Promise<string[]> {
+export async function notify(tx: ScopedTx, userIds: string[], note: Note): Promise<string[]> {
   if (userIds.length === 0) return [];
   const rows = await tx
     .insert(notification)
@@ -42,7 +42,7 @@ async function notify(tx: ScopedTx, userIds: string[], note: Note): Promise<stri
   return rows.map((row) => row.userId);
 }
 
-const activeInOffices = async (tx: ScopedTx, officeIds: string[], role?: "admin" | "user") => {
+export const activeInOffices = async (tx: ScopedTx, officeIds: string[], role?: "admin" | "user") => {
   const rows = await tx
     .select({ id: appUser.id })
     .from(appUser)

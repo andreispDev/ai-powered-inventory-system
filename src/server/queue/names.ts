@@ -5,6 +5,7 @@ export const JOBS = {
   reminders: "reminders.scan",
   auditCheckpoint: "audit.checkpoint",
   auditVerify: "audit.verify",
+  forecast: "forecast.refresh",
 } as const;
 
 export const WORKER_HEARTBEAT_KEY = "worker:heartbeat";

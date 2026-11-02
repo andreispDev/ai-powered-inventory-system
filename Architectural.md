@@ -360,6 +360,8 @@ Forecasts are statistics rather than LLM output: an LLM isn't suited to numeric 
 
 Each job backtests the method, computes error against a seasonal-naive baseline, and stores a confidence level. Forecasts that don't beat the baseline are labeled low-confidence. Reorder suggestions come from predicted demand, lead time (when set), and safety stock. The LLM writes only the plain-language explanation, from the computed numbers, in the nightly job so it doesn't compete with people using chat.
 
+Items don't record a supplier lead time yet, so reorder advice assumes two weeks. Yearly seasons need two years of history, so the current method smooths trend only. Forecast explanations are checked: an AI rewrite is kept only if it has exactly the computed numbers, and the prompt carries no item text.
+
 Methods sit behind a `Forecaster` interface. A Python model service can replace them later without touching callers.
 
 ### Assistant (RAG)
