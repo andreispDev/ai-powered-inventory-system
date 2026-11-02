@@ -1,5 +1,6 @@
 "use client";
 
+import { Building2, CalendarClock, CalendarDays, FolderTree, Hash, StickyNote, User } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
@@ -70,7 +71,7 @@ export function AssignDialog({ itemId, people }: { itemId: string; people: reado
           <DialogDescription>The person and your office&apos;s admins are told who has it and since when.</DialogDescription>
         </DialogHeader>
         <form onSubmit={onSubmit} className="space-y-4">
-          <FormField id="assigneeId" label="Give to" required errors={state.fieldErrors.assigneeId}>
+          <FormField id="assigneeId" icon={User} label="Give to" required errors={state.fieldErrors.assigneeId}>
             <NativeSelect id="assigneeId" required value={assigneeId} onChange={(event) => setAssigneeId(event.target.value)}>
               <option value="">Choose a person</option>
               {people.map((person) => (
@@ -81,14 +82,14 @@ export function AssignDialog({ itemId, people }: { itemId: string; people: reado
             </NativeSelect>
           </FormField>
           <div className="grid gap-4 sm:grid-cols-2">
-            <FormField id="since" label="Since" required errors={state.fieldErrors.since}>
+            <FormField id="since" icon={CalendarDays} label="Since" required errors={state.fieldErrors.since}>
               <Input id="since" type="date" required value={since} onChange={(event) => setSince(event.target.value)} />
             </FormField>
-            <FormField id="dueAt" label="Return by" help="Optional." errors={state.fieldErrors.dueAt}>
+            <FormField id="dueAt" icon={CalendarClock} label="Return by" help="Optional." errors={state.fieldErrors.dueAt}>
               <Input id="dueAt" type="date" value={dueAt} onChange={(event) => setDueAt(event.target.value)} />
             </FormField>
           </div>
-          <FormField id="assign-note" label="Note" errors={state.fieldErrors.note}>
+          <FormField id="assign-note" icon={StickyNote} label="Note" errors={state.fieldErrors.note}>
             <Input id="assign-note" value={note} onChange={(event) => setNote(event.target.value)} />
           </FormField>
           <FormError state={state} />
@@ -164,7 +165,7 @@ export function TransferDialog({
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={onSubmit} className="space-y-4">
-          <FormField id="toOfficeId" label="To office" required errors={state.fieldErrors.toOfficeId}>
+          <FormField id="toOfficeId" icon={Building2} label="To office" required errors={state.fieldErrors.toOfficeId}>
             <NativeSelect id="toOfficeId" required value={toOfficeId} onChange={(event) => setToOfficeId(event.target.value)}>
               <option value="">Choose an office</option>
               {offices.map((office) => (
@@ -174,10 +175,10 @@ export function TransferDialog({
               ))}
             </NativeSelect>
           </FormField>
-          <FormField id="transfer-quantity" label="Quantity" required errors={state.fieldErrors.quantity}>
+          <FormField id="transfer-quantity" icon={Hash} label="Quantity" required errors={state.fieldErrors.quantity}>
             <Input id="transfer-quantity" type="number" min={1} max={quantity} step={1} required value={amount} onChange={(event) => setAmount(event.target.value)} />
           </FormField>
-          <FormField id="transfer-note" label="Note" errors={state.fieldErrors.note}>
+          <FormField id="transfer-note" icon={StickyNote} label="Note" errors={state.fieldErrors.note}>
             <Input id="transfer-note" value={note} onChange={(event) => setNote(event.target.value)} />
           </FormField>
           <FormError state={state} />
@@ -219,6 +220,7 @@ export function RespondToTransfer({ id, categories, summary }: { id: string; cat
       />
       <FormField
         id="categoryId"
+        icon={FolderTree}
         label="Put it in category"
         required
         help="If you already have an item with the same SKU, the stock is added to it."

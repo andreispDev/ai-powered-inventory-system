@@ -9,7 +9,7 @@ import { EmptyState, PageContainer, PageHeader, TableSkeleton } from "@/componen
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { param, parsePage, type SearchParams } from "@/lib/pagination";
-import { listCategories, listFields } from "@/modules/categories/queries";
+import { getCategory, listCategories, listFields } from "@/modules/categories/queries";
 import { ItemsTable } from "@/modules/inventory/items-table";
 import { listItems, listPeople } from "@/modules/inventory/queries";
 import { ITEM_STATUSES } from "@/modules/inventory/schemas";
@@ -54,7 +54,8 @@ async function Content({ searchParams }: Props) {
       limit: pageSize,
     });
     const people = fields.some((field) => field.type === "person") ? await listPeople(tx) : [];
-    return { categories, fields, rows, total, people };
+    const selected = categoryId ? await getCategory(tx, categoryId) : undefined;
+    return { categories, fields, rows, total, people, hideLocation: !!selected?.disabledFields.includes("location") };
   });
 
   const canCreate = actor.permissions.includes("item.create");
@@ -116,6 +117,7 @@ async function Content({ searchParams }: Props) {
             people={Object.fromEntries(data.people.map((person) => [person.id, person.name]))}
             showOffice={!actor.officeId}
             storageKey={categoryId ?? "all"}
+            hideLocation={data.hideLocation}
           />
           <TablePagination total={data.total} page={page} pageSize={pageSize} />
         </Card>

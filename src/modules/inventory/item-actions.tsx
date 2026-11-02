@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowDownToLine, ArrowUpFromLine, RotateCcw, SlidersHorizontal } from "lucide-react";
+import { ArrowDownToLine, ArrowUpFromLine, Hash, MessageSquareText, RotateCcw, SlidersHorizontal } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
@@ -94,6 +94,7 @@ export function MoveStockDialog({ itemId, unit, quantity }: { itemId: string; un
           </fieldset>
           <FormField
             id="amount"
+            icon={Hash}
             label="Amount"
             required
             help={type === "adjust" ? "Use a minus sign to reduce the count." : undefined}
@@ -101,7 +102,7 @@ export function MoveStockDialog({ itemId, unit, quantity }: { itemId: string; un
           >
             <Input id="amount" type="number" step={1} required value={amount} onChange={(event) => setAmount(event.target.value)} />
           </FormField>
-          <FormField id="reason" label="Reason" required errors={state.fieldErrors.reason}>
+          <FormField id="reason" icon={MessageSquareText} label="Reason" required errors={state.fieldErrors.reason}>
             <Input id="reason" required value={reason} onChange={(event) => setReason(event.target.value)} />
           </FormField>
           <dl className="bg-muted/60 flex justify-between rounded-lg px-3 py-2 text-sm" aria-live="polite">

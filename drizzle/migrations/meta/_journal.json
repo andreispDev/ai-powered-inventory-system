@@ -64,6 +64,13 @@
       "when": 1793625315154,
       "tag": "0008_permission_requests_security",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1793630491637,
+      "tag": "0009_fields_and_stock",
+      "breakpoints": true
     }
   ]
 }

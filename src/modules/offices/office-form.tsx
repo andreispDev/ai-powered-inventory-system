@@ -1,5 +1,6 @@
 "use client";
 
+import { Building2, Hash, Mail, MapPin } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
@@ -39,17 +40,17 @@ export function OfficeForm({ office }: { office?: Values }) {
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-[1fr_2fr]">
-        <FormField id="office-code" label="Code" required errors={state.fieldErrors.code}>
+        <FormField id="office-code" icon={Hash} label="Code" required errors={state.fieldErrors.code}>
           <Input {...bind("code")} required className="uppercase" />
         </FormField>
-        <FormField id="office-name" label="Name" required errors={state.fieldErrors.name}>
+        <FormField id="office-name" icon={Building2} label="Name" required errors={state.fieldErrors.name}>
           <Input {...bind("name")} required />
         </FormField>
       </div>
-      <FormField id="office-address" label="Address" errors={state.fieldErrors.address}>
+      <FormField id="office-address" icon={MapPin} label="Address" errors={state.fieldErrors.address}>
         <Input {...bind("address")} />
       </FormField>
-      <FormField id="office-contactEmail" label="Contact email" errors={state.fieldErrors.contactEmail}>
+      <FormField id="office-contactEmail" icon={Mail} label="Contact email" errors={state.fieldErrors.contactEmail}>
         <Input {...bind("contactEmail")} type="email" />
       </FormField>
       <FormError state={state} />

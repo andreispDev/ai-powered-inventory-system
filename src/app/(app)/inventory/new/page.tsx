@@ -36,6 +36,7 @@ async function Content({ searchParams }: Props) {
             categoryId={data.row.id}
             fields={data.fields.map(({ key, label, type, config }) => ({ key, label, type, config }))}
             people={data.people}
+            disabledFields={data.row.disabledFields}
           />
         </PageContainer>
       );

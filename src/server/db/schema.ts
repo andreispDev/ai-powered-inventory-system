@@ -201,6 +201,8 @@ export const category = pgTable(
     parentId: uuid("parent_id"),
     name: text("name").notNull(),
     description: text("description"),
+    /** Standard item fields this category has turned off */
+    disabledFields: text("disabled_fields").array().notNull().default(sql`'{}'::text[]`),
     archivedAt: timestamp("archived_at", { withTimezone: true }),
     ...timestamps,
   },
@@ -254,7 +256,6 @@ export const item = pgTable(
     unitCost: numeric("unit_cost", { precision: 14, scale: 2 }),
     purchaseDate: date("purchase_date"),
     warrantyExpiry: date("warranty_expiry"),
-    reorderLevel: integer("reorder_level"),
     notes: text("notes"),
     attributes: jsonb("attributes").$type<Record<string, unknown>>().notNull().default({}),
     searchTsv: tsvector("search_tsv").generatedAlwaysAs(

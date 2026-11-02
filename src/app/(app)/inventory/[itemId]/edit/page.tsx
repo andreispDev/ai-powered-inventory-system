@@ -9,7 +9,7 @@ import { listFields } from "@/modules/categories/queries";
 import { ItemForm } from "@/modules/inventory/item-form";
 import { listPeople } from "@/modules/inventory/queries";
 import { requireActor } from "@/server/auth/session";
-import { item } from "@/server/db/schema";
+import { category, item } from "@/server/db/schema";
 import { readScoped } from "@/server/guard/read";
 
 export const metadata: Metadata = { title: "Edit item" };
@@ -25,7 +25,8 @@ async function Content({ params }: Props) {
   const data = await readScoped(actor, async (tx) => {
     const [row] = await tx.select().from(item).where(eq(item.id, itemId));
     if (!row || row.deletedAt) return null;
-    return { row, fields: await listFields(tx, row.categoryId), people: await listPeople(tx) };
+    const [parent] = await tx.select({ disabledFields: category.disabledFields }).from(category).where(eq(category.id, row.categoryId));
+    return { row, disabledFields: parent?.disabledFields ?? [], fields: await listFields(tx, row.categoryId), people: await listPeople(tx) };
   });
   if (!data) notFound();
 
@@ -37,6 +38,7 @@ async function Content({ params }: Props) {
         categoryId={row.categoryId}
         fields={data.fields.map(({ key, label, type, config }) => ({ key, label, type, config }))}
         people={data.people}
+        disabledFields={data.disabledFields}
         item={{
           id: row.id,
           version: row.version,
@@ -51,7 +53,6 @@ async function Content({ params }: Props) {
           unitCost: row.unitCost,
           purchaseDate: row.purchaseDate,
           warrantyExpiry: row.warrantyExpiry,
-          reorderLevel: row.reorderLevel,
           notes: row.notes,
           attributes: row.attributes,
         }}

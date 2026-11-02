@@ -3,7 +3,7 @@
 import { and, eq, isNotNull, isNull, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { buildAttributesSchema } from "@/modules/categories/field-schema";
+import { buildAttributesSchema, OPTIONAL_ITEM_FIELDS } from "@/modules/categories/field-schema";
 import { listFields } from "@/modules/categories/queries";
 import { category, item, stockMovement } from "@/server/db/schema";
 import type { ScopedTx } from "@/server/db/scope";
@@ -12,6 +12,13 @@ import { guard } from "@/server/guard/guard";
 import { deltaOf, itemCoreSchema, movementSchema } from "./schemas";
 
 const missing = () => new AppError("NOT_FOUND", "This item no longer exists.");
+
+const OPTIONAL_IDS: readonly string[] = OPTIONAL_ITEM_FIELDS.map((field) => field.id);
+
+/** Fields a category has turned off are ignored, so a stale form can't change them. */
+function withoutDisabled<T extends Record<string, unknown>>(core: T, disabled: readonly string[]): T {
+  return Object.fromEntries(Object.entries(core).filter(([key]) => !(OPTIONAL_IDS.includes(key) && disabled.includes(key)))) as T;
+}
 const skuTaken = () =>
   new AppError("VALIDATION", "Please check the highlighted fields.", { sku: ["Another item already uses this SKU."] });
 
@@ -27,7 +34,6 @@ const LABELS: Record<string, string> = {
   unitCost: "Unit cost",
   purchaseDate: "Purchase date",
   warrantyExpiry: "Warranty expiry",
-  reorderLevel: "Reorder level",
   notes: "Notes",
 };
 
@@ -60,7 +66,7 @@ export const createItem = guard({
     try {
       [row] = await tx
         .insert(item)
-        .values({ ...core, attributes, quantity, officeId: actor.officeId })
+        .values({ ...withoutDisabled(core, parent.disabledFields), attributes, quantity, officeId: actor.officeId })
         .returning({ id: item.id });
     } catch (error) {
       if (isUniqueViolation(error)) throw skuTaken();
@@ -104,6 +110,8 @@ export const updateItem = guard({
     }
 
     const { attributes, activeKeys } = await validateAttributes(tx, before.categoryId, rawAttributes);
+    const [parent] = await tx.select({ disabledFields: category.disabledFields }).from(category).where(eq(category.id, before.categoryId));
+    const allowed = withoutDisabled(core, parent?.disabledFields ?? []);
     // Values in retired columns are kept, in case the column comes back.
     const kept = Object.fromEntries(Object.entries(before.attributes).filter(([key]) => !activeKeys.has(key)));
     const merged = { ...kept, ...attributes };
@@ -112,7 +120,7 @@ export const updateItem = guard({
     try {
       [updated] = await tx
         .update(item)
-        .set({ ...core, attributes: merged, version: sql`${item.version} + 1` })
+        .set({ ...allowed, attributes: merged, version: sql`${item.version} + 1` })
         .where(and(eq(item.id, id), eq(item.version, version)))
         .returning({ id: item.id });
     } catch (error) {
@@ -121,7 +129,7 @@ export const updateItem = guard({
     }
     if (!updated) throw new AppError("CONFLICT", "Someone else just changed this item. Reload and try again.");
 
-    await audit({ action: "item.updated", entityType: "item", entityId: id, before, after: { ...core, attributes: merged } });
+    await audit({ action: "item.updated", entityType: "item", entityId: id, before, after: { ...allowed, attributes: merged } });
     revalidatePath(`/inventory/${id}`);
     revalidatePath("/inventory");
     return { id };

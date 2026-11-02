@@ -20,7 +20,6 @@ export type ItemRow = {
   quantity: number;
   unit: string;
   location: string | null;
-  reorderLevel: number | null;
   attributes: Record<string, unknown>;
   categoryName: string;
   officeName: string;
@@ -42,12 +41,14 @@ export function ItemsTable({
   people,
   showOffice,
   storageKey,
+  hideLocation = false,
 }: {
   rows: ItemRow[];
   fields: readonly FieldDef[];
   people: Readonly<Record<string, string>>;
   showOffice: boolean;
   storageKey: string;
+  hideLocation?: boolean;
 }) {
   const { params, set, pending } = useUrlState();
   const [hidden, setHidden] = useState<string[]>([]);
@@ -92,11 +93,11 @@ export function ItemsTable({
       sort: "quantity",
       align: "right" as const,
       render: (row) => {
-        const low = row.reorderLevel !== null && row.quantity <= row.reorderLevel;
+        const out = row.quantity === 0;
         return (
-          <span className={low ? "text-warning font-medium" : undefined}>
+          <span className={out ? "text-warning font-medium" : undefined}>
             {row.quantity.toLocaleString()} {row.unit}
-            {low && <span className="sr-only"> (low stock)</span>}
+            {out && <span className="sr-only"> (out of stock)</span>}
           </span>
         );
       },
@@ -107,7 +108,7 @@ export function ItemsTable({
       sort: "status",
       render: (row) => <Badge variant={row.status === "active" ? "secondary" : "outline"}>{statusLabel(row.status)}</Badge>,
     },
-    { id: "location", label: "Location", sort: "location", render: (row) => row.location ?? "—" },
+    ...(hideLocation ? [] : [{ id: "location", label: "Location", sort: "location", render: (row: ItemRow) => row.location ?? "—" }]),
     ...fields.map(
       (field): Column => ({
         id: `attr:${field.key}`,

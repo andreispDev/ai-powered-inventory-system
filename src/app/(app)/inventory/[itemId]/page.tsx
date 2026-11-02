@@ -77,7 +77,8 @@ async function Content({ params }: Props) {
   const deleted = !!item.deletedAt;
   const peopleById = Object.fromEntries(data.people.map((person) => [person.id, person.name]));
   const activeFields = data.fields.filter((field) => !field.retiredAt);
-  const low = item.reorderLevel !== null && item.quantity <= item.reorderLevel;
+  const out = item.quantity === 0;
+  const isOff = (field: string) => data.disabledFields.includes(field);
 
   return (
     <PageContainer>
@@ -110,14 +111,14 @@ async function Content({ params }: Props) {
         }
       />
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className={`grid gap-4 ${isOff("location") ? "sm:grid-cols-2" : "sm:grid-cols-3"}`}>
         <Card>
           <CardHeader>
             <p className="text-muted-foreground text-sm">In stock</p>
-            <CardTitle className={`text-3xl tabular-nums ${low ? "text-warning" : ""}`}>
+            <CardTitle className={`text-3xl tabular-nums ${out ? "text-warning" : ""}`}>
               {item.quantity.toLocaleString()} <span className="text-base font-normal">{item.unit}</span>
             </CardTitle>
-            {low && <p className="text-warning text-xs">At or below reorder level ({item.reorderLevel})</p>}
+            {out && <p className="text-warning text-xs">Out of stock</p>}
           </CardHeader>
         </Card>
         <Card>
@@ -128,12 +129,14 @@ async function Content({ params }: Props) {
             </div>
           </CardHeader>
         </Card>
-        <Card>
-          <CardHeader>
-            <p className="text-muted-foreground text-sm">Location</p>
-            <CardTitle>{item.location ?? "—"}</CardTitle>
-          </CardHeader>
-        </Card>
+        {!isOff("location") && (
+          <Card>
+            <CardHeader>
+              <p className="text-muted-foreground text-sm">Location</p>
+              <CardTitle>{item.location ?? "—"}</CardTitle>
+            </CardHeader>
+          </Card>
+        )}
       </div>
 
       <Card>
@@ -146,10 +149,9 @@ async function Content({ params }: Props) {
               ["SKU", item.sku],
               ["Serial number", item.serialNumber],
               ["Condition", item.condition],
-              ["Supplier", item.supplier],
-              ["Unit cost", item.unitCost],
-              ["Reorder level", item.reorderLevel],
-              ["Purchase date", item.purchaseDate],
+              ...(isOff("supplier") ? [] : ([["Supplier", item.supplier]] as [string, string | null][])),
+              ...(isOff("unitCost") ? [] : ([["Unit cost", item.unitCost]] as [string, string | null][])),
+              ...(isOff("purchaseDate") ? [] : ([["Purchase date", item.purchaseDate]] as [string, string | null][])),
               ["Warranty expiry", item.warrantyExpiry],
               ...activeFields.map(
                 (field): [string, string] => [field.label, formatAttribute(item.attributes[field.key], field, peopleById)],

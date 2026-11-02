@@ -153,7 +153,7 @@ Some permissions can never be granted below Developer, including `office.manage`
 | ID | Requirement | Priority |
 |---|---|---|
 | INV-1 | Users create, view, edit and delete items. Delete is reversible (soft delete) and restorable by an admin | P0 |
-| INV-2 | Every item has standard columns: name, SKU or code, status, quantity, unit, location, condition, serial number, supplier, unit cost, purchase date, warranty expiry, reorder level, notes | P0 |
+| INV-2 | Every item has standard columns: name, SKU or code, status, quantity, unit, location, condition, serial number, supplier, unit cost, purchase date, warranty expiry, notes. A category can turn off location, supplier, unit cost and purchase date | P0 |
 | INV-3 | Users create categories, and each category can add its own custom columns (FR-CAT) | P0 |
 | INV-4 | Quantity changes only through recorded stock movements (receive, issue, adjust, return, transfer), each with a reason. The history can always explain the current number | P0 |
 | INV-5 | If two people edit one item at once, the second is warned and shown what changed, rather than silently overwriting | P0 |
@@ -187,7 +187,7 @@ Example from the brief: "This item was given to this office since (date), by (pe
 | ASG-1 | An item can be assigned to an office or a person, recording who assigned it, the start date, and an optional return date | P0 |
 | ASG-2 | Transfers between offices follow start → accept or reject → complete. Stock moves only on accept | P0 |
 | ASG-3 | A background job announces each completed assignment or transfer to affected accounts: "*Item X was given to Office Y since 2 Nov 2026, by Maria Santos*" | P0 |
-| ASG-4 | Scheduled jobs send reminders: return date near or overdue, low stock, warranty expiring, transfer awaiting a response | P0 |
+| ASG-4 | Scheduled jobs send reminders: return date near or overdue, out of stock, warranty expiring, transfer awaiting a response | P0 |
 | ASG-5 | Item pages show the full custody chain | P0 |
 
 ### 4.8 Notifications and announcements (FR-NTF)
@@ -228,7 +228,7 @@ Example from the brief: "This item was given to this office since (date), by (pe
 | Role | Contents | Priority |
 |---|---|---|
 | **Developer** | Offices, accounts, online now, system health, job status, activity across offices, stock risk by office, AI usage and speed, pending permission requests | P0 |
-| **Admin** | Office stock value and counts, low and predicted stock-outs, live staff activity, pending transfers, recent changes, staff list | P0 |
+| **Admin** | Office stock value and counts, charts by status and category, out-of-stock items and predicted stock-outs, live staff activity, pending transfers, recent changes, staff list | P0 |
 | **User** | My recent work, items needing attention, assignments to me, announcements, quick actions, predictions for my office | P0 |
 
 Each dashboard loads section by section, so one slow or failed section does not block the others.

@@ -1,9 +1,11 @@
+import { Boxes, FolderTree, PackageX } from "lucide-react";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import { AppShell } from "@/components/shell/app-shell";
-import { PageContainer, PageHeader, PageSkeleton } from "@/components/shell/page";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { DonutChart } from "@/components/charts/donut-chart";
+import { PageContainer, PageHeader, PageSkeleton, StatCard } from "@/components/shell/page";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 import { DeleteItemButton, MoveStockDialog } from "@/modules/inventory/item-actions";
@@ -34,23 +36,46 @@ async function Preview({ searchParams }: { searchParams: Promise<{ role?: string
           }
         />
         <div className="grid gap-4 sm:grid-cols-3">
-          <Card className="surface-soft">
+          <StatCard label="Items" icon={Boxes} value="128" />
+          <StatCard label="Out of stock" icon={PackageX} value="4" />
+          <StatCard label="Categories" icon={FolderTree} value="9" />
+        </div>
+        <div className="grid gap-6 lg:grid-cols-2">
+          <Card>
             <CardHeader>
-              <CardDescription>Items</CardDescription>
-              <CardTitle className="text-3xl tabular-nums">128</CardTitle>
+              <CardTitle>Items by status</CardTitle>
             </CardHeader>
+            <CardContent>
+              <DonutChart
+                totalLabel="Items"
+                empty="No items yet."
+                slices={[
+                  { label: "Active", value: 96 },
+                  { label: "In repair", value: 18 },
+                  { label: "Retired", value: 10 },
+                  { label: "Lost", value: 4 },
+                ]}
+              />
+            </CardContent>
           </Card>
-          <Card className="surface-soft">
+          <Card>
             <CardHeader>
-              <CardDescription>Low stock</CardDescription>
-              <CardTitle className="text-3xl tabular-nums">4</CardTitle>
+              <CardTitle>Items by category</CardTitle>
             </CardHeader>
-          </Card>
-          <Card className="surface-soft">
-            <CardHeader>
-              <CardDescription>Categories</CardDescription>
-              <CardTitle className="text-3xl tabular-nums">9</CardTitle>
-            </CardHeader>
+            <CardContent>
+              <DonutChart
+                totalLabel="Items"
+                empty="No items yet."
+                slices={[
+                  { label: "Laptops", value: 44 },
+                  { label: "Furniture", value: 30 },
+                  { label: "Supplies", value: 25 },
+                  { label: "Medical", value: 15 },
+                  { label: "Vehicles", value: 8 },
+                  { label: "Tools", value: 6 },
+                ]}
+              />
+            </CardContent>
           </Card>
         </div>
         <Card>

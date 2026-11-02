@@ -78,7 +78,6 @@ export async function listItems(tx: ScopedTx, filters: ItemFilters) {
         quantity: item.quantity,
         unit: item.unit,
         location: item.location,
-        reorderLevel: item.reorderLevel,
         attributes: item.attributes,
         updatedAt: item.updatedAt,
         categoryName: category.name,
@@ -97,7 +96,7 @@ export async function listItems(tx: ScopedTx, filters: ItemFilters) {
 
 export async function getItem(tx: ScopedTx, id: string) {
   const [row] = await tx
-    .select({ item, categoryName: category.name, officeName: office.name })
+    .select({ item, categoryName: category.name, disabledFields: category.disabledFields, officeName: office.name })
     .from(item)
     .innerJoin(category, eq(item.categoryId, category.id))
     .innerJoin(office, eq(item.officeId, office.id))
@@ -135,7 +134,7 @@ export async function inventoryStats(tx: ScopedTx) {
     .select({
       items: count(),
       units: sql<number>`coalesce(sum(${item.quantity}), 0)::int`,
-      lowStock: sql<number>`count(*) filter (where ${item.reorderLevel} is not null and ${item.quantity} <= ${item.reorderLevel})::int`,
+      outOfStock: sql<number>`(count(*) filter (where ${item.quantity} = 0))::int`,
       value: sql<string>`coalesce(sum(${item.quantity} * ${item.unitCost}), 0)::text`,
     })
     .from(item)
@@ -143,10 +142,29 @@ export async function inventoryStats(tx: ScopedTx) {
   return row;
 }
 
-export const listLowStock = (tx: ScopedTx) =>
+export const listOutOfStock = (tx: ScopedTx) =>
   tx
-    .select({ id: item.id, name: item.name, quantity: item.quantity, unit: item.unit, reorderLevel: item.reorderLevel })
+    .select({ id: item.id, name: item.name, unit: item.unit })
     .from(item)
-    .where(and(isNull(item.deletedAt), sql`${item.reorderLevel} is not null and ${item.quantity} <= ${item.reorderLevel}`))
-    .orderBy(asc(sql`${item.quantity} - ${item.reorderLevel}`))
+    .where(and(isNull(item.deletedAt), eq(item.quantity, 0)))
+    .orderBy(asc(item.name))
     .limit(5);
+
+/** Figures for the dashboard charts. RLS limits them to what this person may see. */
+export async function inventoryBreakdown(tx: ScopedTx) {
+  const active = isNull(item.deletedAt);
+  const byStatus = await tx.select({ label: item.status, value: count() }).from(item).where(active).groupBy(item.status);
+  const byCategory = await tx
+    .select({ label: category.name, value: count() })
+    .from(item)
+    .innerJoin(category, eq(item.categoryId, category.id))
+    .where(active)
+    .groupBy(category.name);
+  const byOffice = await tx
+    .select({ label: office.name, value: count() })
+    .from(item)
+    .innerJoin(office, eq(item.officeId, office.id))
+    .where(active)
+    .groupBy(office.name);
+  return { byStatus, byCategory, byOffice };
+}

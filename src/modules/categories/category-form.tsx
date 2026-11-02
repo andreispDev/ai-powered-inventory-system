@@ -1,5 +1,6 @@
 "use client";
 
+import { AlignLeft, FolderTree, Tag } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
@@ -27,13 +28,13 @@ export function CategoryForm({ parents }: { parents: readonly { id: string; name
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
-      <FormField id="name" label="Name" required errors={state.fieldErrors.name}>
+      <FormField id="name" icon={Tag} label="Name" required errors={state.fieldErrors.name}>
         <Input id="name" required value={name} onChange={(event) => setName(event.target.value)} />
       </FormField>
-      <FormField id="description" label="Description" errors={state.fieldErrors.description}>
+      <FormField id="description" icon={AlignLeft} label="Description" errors={state.fieldErrors.description}>
         <Textarea id="description" value={description} onChange={(event) => setDescription(event.target.value)} />
       </FormField>
-      <FormField id="parentId" label="Inside category" help="Optional. Up to 3 levels." errors={state.fieldErrors.parentId}>
+      <FormField id="parentId" icon={FolderTree} label="Inside category" help="Optional. Up to 3 levels." errors={state.fieldErrors.parentId}>
         <NativeSelect
           id="parentId"
           value={parentId}

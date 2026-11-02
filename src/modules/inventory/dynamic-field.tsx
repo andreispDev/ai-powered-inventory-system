@@ -1,11 +1,42 @@
 "use client";
 
+import {
+  AlignLeft,
+  Banknote,
+  CalendarClock,
+  CalendarDays,
+  CheckSquare,
+  Hash,
+  Link2,
+  ListChecks,
+  ListFilter,
+  type LucideIcon,
+  Mail,
+  Type,
+  User,
+} from "lucide-react";
 import { FormField } from "@/components/forms/form";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
-import { isNumeric, type FieldDef } from "@/modules/categories/field-schema";
+import { isNumeric, type FieldDef, type FieldType } from "@/modules/categories/field-schema";
+
+const ICONS: Record<FieldType, LucideIcon> = {
+  text: Type,
+  long_text: AlignLeft,
+  integer: Hash,
+  decimal: Hash,
+  currency: Banknote,
+  date: CalendarDays,
+  datetime: CalendarClock,
+  boolean: CheckSquare,
+  select: ListFilter,
+  multi_select: ListChecks,
+  url: Link2,
+  email: Mail,
+  person: User,
+};
 
 /** Renders any custom column, so every form comes from the same definitions. */
 export function DynamicField({
@@ -102,7 +133,7 @@ export function DynamicField({
   };
 
   return (
-    <FormField id={id} label={label} required={config.required} help={config.help} errors={errors}>
+    <FormField id={id} icon={ICONS[type]} label={label} required={config.required} help={config.help} errors={errors}>
       {control()}
     </FormField>
   );

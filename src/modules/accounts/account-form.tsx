@@ -1,5 +1,6 @@
 "use client";
 
+import { Building2, Mail, Shield, User } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
@@ -42,7 +43,7 @@ export function AccountForm({
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
-      <FormField id="name" label="Full name" required errors={state.fieldErrors.name}>
+      <FormField id="name" icon={User} label="Full name" required errors={state.fieldErrors.name}>
         <Input
           id="name"
           required
@@ -50,7 +51,7 @@ export function AccountForm({
           onChange={(event) => setValues({ ...values, name: event.target.value })}
         />
       </FormField>
-      <FormField id="email" label="Email" required help="They sign in with a code sent here." errors={state.fieldErrors.email}>
+      <FormField id="email" icon={Mail} label="Email" required help="They sign in with a code sent here." errors={state.fieldErrors.email}>
         <Input
           id="email"
           type="email"
@@ -60,7 +61,7 @@ export function AccountForm({
         />
       </FormField>
       {canCreateAdmin && (
-        <FormField id="role" label="Role" errors={state.fieldErrors.role}>
+        <FormField id="role" icon={Shield} label="Role" errors={state.fieldErrors.role}>
           <NativeSelect
             id="role"
             value={values.role}
@@ -72,7 +73,7 @@ export function AccountForm({
         </FormField>
       )}
       {offices && !fixedOfficeId && (
-        <FormField id="officeId" label="Office" required errors={state.fieldErrors.officeId}>
+        <FormField id="officeId" icon={Building2} label="Office" required errors={state.fieldErrors.officeId}>
           <NativeSelect
             id="officeId"
             required

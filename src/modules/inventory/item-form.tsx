@@ -1,5 +1,21 @@
 "use client";
 
+import {
+  Activity,
+  Banknote,
+  Barcode,
+  CalendarDays,
+  CircleDot,
+  Fingerprint,
+  Hash,
+  type LucideIcon,
+  MapPin,
+  Package,
+  Ruler,
+  ShieldCheck,
+  StickyNote,
+  Truck,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
@@ -30,7 +46,6 @@ export type ItemFormValues = {
   unitCost: string | null;
   purchaseDate: string | null;
   warrantyExpiry: string | null;
-  reorderLevel: number | null;
   notes: string | null;
   attributes: Record<string, unknown>;
 };
@@ -40,11 +55,13 @@ export function ItemForm({
   fields,
   people,
   item,
+  disabledFields = [],
 }: {
   categoryId: string;
   fields: readonly FieldDef[];
   people: readonly { id: string; name: string }[];
   item?: ItemFormValues;
+  disabledFields?: readonly string[];
 }) {
   const router = useRouter();
   const create = useSubmit(createItem);
@@ -63,7 +80,6 @@ export function ItemForm({
     unitCost: item?.unitCost ?? "",
     purchaseDate: item?.purchaseDate ?? "",
     warrantyExpiry: item?.warrantyExpiry ?? "",
-    reorderLevel: item?.reorderLevel?.toString() ?? "",
     notes: item?.notes ?? "",
   });
   const [quantity, setQuantity] = useState("0");
@@ -79,8 +95,9 @@ export function ItemForm({
     router.push(`/inventory/${result.data.id}`);
   }
 
-  const text = (name: keyof typeof values, label: string, extra?: { required?: boolean; type?: string; help?: string }) => (
-    <FormField id={name} label={label} required={extra?.required} help={extra?.help} errors={state.fieldErrors[name]}>
+  const text = (name: keyof typeof values, label: string, icon: LucideIcon, extra?: { required?: boolean; type?: string; help?: string }) =>
+    disabledFields.includes(name) ? null : (
+    <FormField id={name} label={label} icon={icon} required={extra?.required} help={extra?.help} errors={state.fieldErrors[name]}>
       <Input
         id={name}
         type={extra?.type ?? "text"}
@@ -101,9 +118,9 @@ export function ItemForm({
           <CardDescription>The standard information every item has.</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2">
-          <div className="sm:col-span-2">{text("name", "Name", { required: true })}</div>
-          {text("sku", "SKU or code")}
-          <FormField id="status" label="Status" errors={state.fieldErrors.status}>
+          <div className="sm:col-span-2">{text("name", "Name", Package, { required: true })}</div>
+          {text("sku", "SKU or code", Barcode)}
+          <FormField id="status" label="Status" icon={CircleDot} errors={state.fieldErrors.status}>
             <NativeSelect
               id="status"
               value={values.status}
@@ -117,21 +134,20 @@ export function ItemForm({
             </NativeSelect>
           </FormField>
           {!item && (
-            <FormField id="quantity" label="Starting quantity" errors={state.fieldErrors.quantity}>
+            <FormField id="quantity" label="Starting quantity" icon={Hash} errors={state.fieldErrors.quantity}>
               <Input id="quantity" type="number" min={0} step={1} value={quantity} onChange={(event) => setQuantity(event.target.value)} />
             </FormField>
           )}
-          {text("unit", "Unit", { required: true, help: "Such as pcs, box or kg." })}
-          {text("reorderLevel", "Reorder level", { type: "number", help: "Flagged as low stock at or below this." })}
-          {text("location", "Location")}
-          {text("condition", "Condition")}
-          {text("serialNumber", "Serial number")}
-          {text("supplier", "Supplier")}
-          {text("unitCost", "Unit cost", { type: "number" })}
-          {text("purchaseDate", "Purchase date", { type: "date" })}
-          {text("warrantyExpiry", "Warranty expiry", { type: "date" })}
+          {text("unit", "Unit", Ruler, { required: true, help: "Such as pcs, box or kg." })}
+          {text("location", "Location", MapPin)}
+          {text("condition", "Condition", Activity)}
+          {text("serialNumber", "Serial number", Fingerprint)}
+          {text("supplier", "Supplier", Truck)}
+          {text("unitCost", "Unit cost", Banknote, { type: "number" })}
+          {text("purchaseDate", "Purchase date", CalendarDays, { type: "date" })}
+          {text("warrantyExpiry", "Warranty expiry", ShieldCheck, { type: "date" })}
           <div className="sm:col-span-2">
-            <FormField id="notes" label="Notes" errors={state.fieldErrors.notes}>
+            <FormField id="notes" label="Notes" icon={StickyNote} errors={state.fieldErrors.notes}>
               <Textarea id="notes" value={values.notes} onChange={(event) => setValues({ ...values, notes: event.target.value })} />
             </FormField>
           </div>

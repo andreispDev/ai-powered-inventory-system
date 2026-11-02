@@ -14,6 +14,8 @@ import {
   isChoice,
   keyFromLabel,
   MAX_FIELDS_PER_CATEGORY,
+  OPTIONAL_ITEM_FIELDS,
+  type OptionalItemField,
   type FieldConfig,
   type FieldDef,
   type FieldType,
@@ -224,6 +226,24 @@ export const moveField = guard({
       await audit({ action: "category_field.moved", entityType: "category_field", entityId: id, after: { direction } });
     }
     revalidatePath(`/categories/${target.categoryId}`);
+    return { id };
+  },
+});
+
+export const setFieldDisabled = guard({
+  permission: "category.update",
+  input: z.object({
+    id: z.uuid(),
+    field: z.enum(OPTIONAL_ITEM_FIELDS.map((f) => f.id) as [OptionalItemField, ...OptionalItemField[]]),
+    disabled: z.boolean(),
+  }),
+  run: async ({ input: { id, field, disabled }, tx, audit }) => {
+    const [row] = await tx.select({ disabledFields: category.disabledFields }).from(category).where(eq(category.id, id)).for("update");
+    if (!row) throw missing();
+    const next = disabled ? [...new Set([...row.disabledFields, field])] : row.disabledFields.filter((name) => name !== field);
+    await tx.update(category).set({ disabledFields: next }).where(eq(category.id, id));
+    await audit({ action: disabled ? "category.field_disabled" : "category.field_enabled", entityType: "category", entityId: id, after: { field } });
+    revalidatePath(`/categories/${id}`);
     return { id };
   },
 });

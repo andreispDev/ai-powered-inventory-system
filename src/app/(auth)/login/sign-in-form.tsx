@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2 } from "lucide-react";
+import { KeyRound, Loader2, Mail } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
@@ -70,7 +70,10 @@ export function SignInForm() {
     return (
       <form onSubmit={submitEmail} className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="email">Email address</Label>
+          <Label htmlFor="email">
+            <Mail className="size-3.5" aria-hidden />
+            Email address
+          </Label>
           <Input
             id="email"
             type="email"
@@ -102,7 +105,10 @@ export function SignInForm() {
         its way. It expires in 5 minutes.
       </p>
       <div className="space-y-2">
-        <Label htmlFor="code">Sign-in code</Label>
+        <Label htmlFor="code">
+          <KeyRound className="size-3.5" aria-hidden />
+          Sign-in code
+        </Label>
         <Input
           id="code"
           required

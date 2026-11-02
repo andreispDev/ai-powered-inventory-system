@@ -1,14 +1,16 @@
 import { count, desc, eq, isNull, sql } from "drizzle-orm";
-import { AlertTriangle, Boxes, FolderTree } from "lucide-react";
+import { AlertTriangle, Banknote, Boxes, Building2, FolderTree, PackageX, Users } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
+import { DonutChart } from "@/components/charts/donut-chart";
 import { LocalTime } from "@/components/shell/local-time";
-import { EmptyState, PageContainer, PageHeader, PageSkeleton } from "@/components/shell/page";
+import { EmptyState, PageContainer, PageHeader, PageSkeleton, StatCard } from "@/components/shell/page";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { countCategories } from "@/modules/categories/queries";
-import { inventoryStats, listLowStock } from "@/modules/inventory/queries";
+import { inventoryBreakdown, inventoryStats, listOutOfStock } from "@/modules/inventory/queries";
+import { ITEM_STATUSES } from "@/modules/inventory/schemas";
 import { requireActor } from "@/server/auth/session";
 import { appUser, auditLog, office } from "@/server/db/schema";
 import { readScoped } from "@/server/guard/read";
@@ -29,31 +31,14 @@ const ACTION_LABELS: Record<string, string> = {
   "office.created": "created an office",
 };
 
-function Stat({ label, value, href }: { label: string; value: string; href?: string }) {
-  const content = (
-    <Card
-      className={
-        href
-          ? "surface-soft hover:shadow-raised h-full transition-shadow duration-[var(--motion-base)]"
-          : "surface-soft h-full"
-      }
-    >
-      <CardHeader>
-        <CardDescription>{label}</CardDescription>
-        <CardTitle className="text-3xl tabular-nums">{value}</CardTitle>
-      </CardHeader>
-    </Card>
-  );
-  return href ? <Link href={href}>{content}</Link> : content;
-}
-
 async function Content() {
   const actor = await requireActor();
   const can = (permission: (typeof actor.permissions)[number]) => actor.permissions.includes(permission);
 
   const data = await readScoped(actor, async (tx) => {
     const stats = await inventoryStats(tx);
-    const lowStock = await listLowStock(tx);
+    const outOfStock = await listOutOfStock(tx);
+    const breakdown = await inventoryBreakdown(tx);
     const categories = await countCategories(tx);
     const [people] = await tx.select({ total: count() }).from(appUser).where(sql`${appUser.status} <> 'deactivated'`);
     const [offices] = await tx.select({ total: count() }).from(office).where(eq(office.status, "active"));
@@ -67,7 +52,7 @@ async function Content() {
           .orderBy(desc(auditLog.at))
           .limit(8)
       : [];
-    return { stats, lowStock, categories, people: people.total, offices: offices.total, activity, showActivity };
+    return { stats, outOfStock, breakdown, categories, people: people.total, offices: offices.total, activity, showActivity };
   });
 
   const value = Number(data.stats.value);
@@ -81,18 +66,63 @@ async function Content() {
   return (
     <PageContainer>
       <PageHeader title={`Welcome, ${actor.name.split(" ")[0]}`} description={description} />
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {actor.role === "developer" && <Stat label="Active offices" value={data.offices.toLocaleString()} href="/console/offices" />}
-        <Stat label="Items" value={data.stats.items.toLocaleString()} href="/inventory" />
-        <Stat label="Low stock" value={data.stats.lowStock.toLocaleString()} href="/inventory" />
-        {actor.role !== "developer" && <Stat label="Categories" value={data.categories.toLocaleString()} href="/categories" />}
-        {can("user.read") && <Stat label="People" value={data.people.toLocaleString()} href="/accounts" />}
-        {actor.role === "admin" && <Stat label="Stock value" value={value.toLocaleString(undefined, { maximumFractionDigits: 2 })} />}
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(13rem,1fr))] gap-4">
+        {actor.role === "developer" && <StatCard label="Active offices" icon={Building2} value={data.offices.toLocaleString()} href="/console/offices" />}
+        <StatCard label="Items" icon={Boxes} value={data.stats.items.toLocaleString()} href="/inventory" />
+        <StatCard label="Out of stock" icon={PackageX} value={data.stats.outOfStock.toLocaleString()} href="/inventory" />
+        {actor.role !== "developer" && <StatCard label="Categories" icon={FolderTree} value={data.categories.toLocaleString()} href="/categories" />}
+        {can("user.read") && <StatCard label="People" icon={Users} value={data.people.toLocaleString()} href="/accounts" />}
+        {actor.role === "admin" && <StatCard label="Stock value" icon={Banknote} value={value.toLocaleString(undefined, { maximumFractionDigits: 2 })} />}
       </div>
 
       {data.categories === 0 && data.stats.items === 0 && actor.role !== "developer" && (
         <EmptyState icon={FolderTree} title="Start by creating a category" description="Categories hold your items and let you add the columns your office needs." />
       )}
+
+      <div className="grid gap-6 lg:grid-cols-3">
+        <Card>
+          <CardHeader>
+            <CardTitle>Items by status</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <DonutChart
+              totalLabel="Items"
+              empty="No items yet."
+              slices={data.breakdown.byStatus.map((row) => ({
+                label: ITEM_STATUSES.find((status) => status.value === row.label)?.label ?? row.label,
+                value: row.value,
+              }))}
+            />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>{actor.role === "developer" ? "Items by office" : "Items by category"}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <DonutChart
+              totalLabel="Items"
+              empty="No items yet."
+              slices={actor.role === "developer" ? data.breakdown.byOffice : data.breakdown.byCategory}
+            />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Stock availability</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <DonutChart
+              totalLabel="Items"
+              empty="No items yet."
+              slices={[
+                { label: "In stock", value: data.stats.items - data.stats.outOfStock },
+                { label: "Out of stock", value: data.stats.outOfStock },
+              ]}
+            />
+          </CardContent>
+        </Card>
+      </div>
 
       <div className="grid items-start gap-6 lg:grid-cols-2">
         <Card>
@@ -103,18 +133,16 @@ async function Content() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {data.lowStock.length === 0 ? (
-              <p className="text-muted-foreground text-sm">Nothing is at or below its reorder level.</p>
+            {data.outOfStock.length === 0 ? (
+              <p className="text-muted-foreground text-sm">Everything is in stock.</p>
             ) : (
               <ul className="divide-y text-sm">
-                {data.lowStock.map((row) => (
+                {data.outOfStock.map((row) => (
                   <li key={row.id} className="flex justify-between gap-3 py-2">
                     <Link href={`/inventory/${row.id}`} className="truncate hover:underline">
                       {row.name}
                     </Link>
-                    <span className="text-warning shrink-0 tabular-nums">
-                      {row.quantity} {row.unit} left
-                    </span>
+                    <span className="text-warning shrink-0">Out of stock</span>
                   </li>
                 ))}
               </ul>

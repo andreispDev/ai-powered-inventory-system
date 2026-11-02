@@ -295,14 +295,15 @@ describe("announcements", () => {
 });
 
 describe("reminders", () => {
-  it("flags low stock once a day, for admins only", async () => {
-    await db.update(item).set({ reorderLevel: 999 }).where(eq(item.id, ITEM_A));
+  it("flags out of stock once a day, for admins only", async () => {
+    const [before] = await db.select().from(item).where(eq(item.id, ITEM_A));
+    await db.update(item).set({ quantity: 0 }).where(eq(item.id, ITEM_A));
     const now = new Date("2026-11-02T08:00:00Z");
     await asWorker((tx) => scanReminders(tx, now));
     expect(await asWorker((tx) => scanReminders(tx, now))).not.toContain(ADMIN_A);
-    const notes = await db.select().from(notification).where(eq(notification.dedupeKey, `low_stock:${ITEM_A}:2026-11-02`));
+    const notes = await db.select().from(notification).where(eq(notification.dedupeKey, `out_of_stock:${ITEM_A}:2026-11-02`));
     expect(notes.map((n) => n.userId)).toEqual([ADMIN_A]);
-    await db.update(item).set({ reorderLevel: null }).where(eq(item.id, ITEM_A));
+    await db.update(item).set({ quantity: before.quantity }).where(eq(item.id, ITEM_A));
   });
 
   it("marks overdue returns urgent", async () => {

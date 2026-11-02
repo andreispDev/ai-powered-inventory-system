@@ -1,5 +1,7 @@
 import type { LucideIcon } from "lucide-react";
+import Link from "next/link";
 import type { ReactNode } from "react";
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
@@ -37,6 +39,24 @@ export function PageHeader({
       {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
     </div>
   );
+}
+
+/** A headline number. Links to the list behind it when there is one. */
+export function StatCard({ label, value, icon: Icon, href }: { label: string; value: string; icon: LucideIcon; href?: string }) {
+  const content = (
+    <Card className={cn("surface-soft h-full", href && "hover:shadow-raised transition-shadow duration-[var(--motion-base)]")}>
+      <CardHeader className="flex items-start justify-between gap-3">
+        <div className="min-w-0 space-y-1">
+          <CardDescription>{label}</CardDescription>
+          <CardTitle className="text-3xl tabular-nums">{value}</CardTitle>
+        </div>
+        <span className="bg-primary/10 text-primary flex size-9 shrink-0 items-center justify-center rounded-lg">
+          <Icon className="size-4.5" aria-hidden />
+        </span>
+      </CardHeader>
+    </Card>
+  );
+  return href ? <Link href={href}>{content}</Link> : content;
 }
 
 export function EmptyState({

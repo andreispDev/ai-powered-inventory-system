@@ -1,5 +1,6 @@
 "use client";
 
+import { AlignLeft, Building2, Clock, Heading, Send, Shield } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useRef, useState, type FormEvent } from "react";
 import { toast } from "sonner";
@@ -78,14 +79,14 @@ export function AnnouncementForm({
         confirmLabel={when ? "Schedule" : "Send"}
         onConfirm={send}
       />
-      <FormField id="title" label="Title" required errors={state.fieldErrors.title}>
+      <FormField id="title" icon={Heading} label="Title" required errors={state.fieldErrors.title}>
         <Input id="title" required value={title} onChange={(event) => setTitle(event.target.value)} />
       </FormField>
-      <FormField id="body" label="Message" required errors={state.fieldErrors.body}>
+      <FormField id="body" icon={AlignLeft} label="Message" required errors={state.fieldErrors.body}>
         <Textarea id="body" required rows={4} value={body} onChange={(event) => setBody(event.target.value)} />
       </FormField>
       {global && (
-        <FormField id="audience" label="Send to">
+        <FormField id="audience" icon={Send} label="Send to">
           <NativeSelect id="audience" value={audience} onChange={(event) => setAudience(event.target.value as Audience)}>
             <option value="all">Everyone</option>
             <option value="offices">Chosen offices</option>
@@ -94,7 +95,7 @@ export function AnnouncementForm({
         </FormField>
       )}
       {global && audience === "offices" && (
-        <FormField id="offices" label="Offices" errors={state.fieldErrors.audienceOfficeIds}>
+        <FormField id="offices" icon={Building2} label="Offices" errors={state.fieldErrors.audienceOfficeIds}>
           <div id="offices" className="space-y-1.5 rounded-lg border p-2.5">
             {offices.map((office) => (
               <label key={office.id} className="flex items-center gap-2 text-sm">
@@ -111,7 +112,7 @@ export function AnnouncementForm({
         </FormField>
       )}
       {global && audience === "role" && (
-        <FormField id="role" label="Role" errors={state.fieldErrors.audienceRole}>
+        <FormField id="role" icon={Shield} label="Role" errors={state.fieldErrors.audienceRole}>
           <NativeSelect id="role" value={role} onChange={(event) => setRole(event.target.value as Role)}>
             <option value="developer">Developers</option>
             <option value="admin">Admins</option>
@@ -119,7 +120,7 @@ export function AnnouncementForm({
           </NativeSelect>
         </FormField>
       )}
-      <FormField id="when" label="Send later" help="Leave empty to send now." errors={state.fieldErrors.scheduledAt}>
+      <FormField id="when" icon={Clock} label="Send later" help="Leave empty to send now." errors={state.fieldErrors.scheduledAt}>
         <Input id="when" type="datetime-local" value={when} onChange={(event) => setWhen(event.target.value)} />
       </FormField>
       <label className="flex items-center gap-2 text-sm">

@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { CategoryArchiveButton } from "@/modules/categories/archive-button";
 import { ColumnBuilder } from "@/modules/categories/column-builder";
 import { getCategory, listFields } from "@/modules/categories/queries";
+import { StandardFields } from "@/modules/categories/standard-fields";
 import { requireActor } from "@/server/auth/session";
 import { readScoped } from "@/server/guard/read";
 
@@ -43,6 +44,11 @@ async function Content({ params }: Props) {
             {actor.permissions.includes("category.archive") && <CategoryArchiveButton id={data.row.id} archived={archived} />}
           </>
         }
+      />
+      <StandardFields
+        categoryId={data.row.id}
+        disabled={data.row.disabledFields}
+        canEdit={actor.permissions.includes("category.update") && !archived}
       />
       <ColumnBuilder
         categoryId={data.row.id}

@@ -1,6 +1,6 @@
 "use client";
 
-import { CircleAlert, Loader2 } from "lucide-react";
+import { CircleAlert, Loader2, type LucideIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 export function FormField({
   id,
   label,
+  icon: Icon,
   required,
   help,
   errors,
@@ -18,6 +19,7 @@ export function FormField({
 }: {
   id: string;
   label: string;
+  icon?: LucideIcon;
   required?: boolean;
   help?: string;
   errors?: string[];
@@ -31,6 +33,7 @@ export function FormField({
       )}
     >
       <Label htmlFor={id}>
+        {Icon && <Icon className="text-muted-foreground size-3.5" aria-hidden />}
         {label}
         {required && (
           <span className="text-destructive" aria-hidden>

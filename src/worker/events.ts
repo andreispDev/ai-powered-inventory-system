@@ -209,19 +209,18 @@ export async function scanReminders(tx: ScopedTx, now = new Date()): Promise<str
   for (const { id: officeId } of offices) {
     const admins = await activeInOffices(tx, [officeId], "admin");
 
-    const lowStock = await tx
-      .select({ id: item.id, name: item.name, quantity: item.quantity, unit: item.unit })
+    const outOfStock = await tx
+      .select({ id: item.id, name: item.name })
       .from(item)
-      .where(and(eq(item.officeId, officeId), isNull(item.deletedAt), sql`${item.reorderLevel} is not null and ${item.quantity} <= ${item.reorderLevel}`))
+      .where(and(eq(item.officeId, officeId), isNull(item.deletedAt), eq(item.quantity, 0)))
       .limit(50);
-    for (const row of lowStock) {
+    for (const row of outOfStock) {
       notified.push(
         ...(await notify(tx, admins, {
-          kind: "low_stock",
-          title: `${row.name} is low on stock`,
-          body: `${row.quantity} ${row.unit} left.`,
+          kind: "out_of_stock",
+          title: `${row.name} is out of stock`,
           link: `/inventory/${row.id}`,
-          dedupeKey: `low_stock:${row.id}:${today}`,
+          dedupeKey: `out_of_stock:${row.id}:${today}`,
         })),
       );
     }

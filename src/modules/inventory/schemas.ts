@@ -29,12 +29,6 @@ const day = z
   .nullable()
   .optional();
 
-const wholeOrEmpty = z
-  .union([z.literal(""), z.coerce.number().int("Enter a whole number.").min(0, "Can't be negative.")])
-  .transform((value) => (value === "" ? null : value))
-  .nullable()
-  .optional();
-
 export const itemCoreSchema = z.object({
   name: z.string().trim().min(1, "Enter the item name.").max(200),
   sku: text(80),
@@ -51,7 +45,6 @@ export const itemCoreSchema = z.object({
     .optional(),
   purchaseDate: day,
   warrantyExpiry: day,
-  reorderLevel: wholeOrEmpty,
   notes: text(5000),
   attributes: z.record(z.string(), z.unknown()),
 });

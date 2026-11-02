@@ -257,7 +257,7 @@ Base: shadcn/ui with Radix primitives. Components live in our repo and we own th
 | **Sidebar** | shadcn sidebar with rail and our groups |
 | **Command** | Global palette with permission-aware results |
 | **Tooltip** | 300ms delay, one line |
-| **Chart** | Recharts through shadcn charts, themed, with accessible data-table fallback |
+| **Chart** | Donut charts built in SVG, in shades of the theme's one primary color, with a legend listing every value. Up to 5 slices; the rest fold into "Other" |
 
 **Added components:** DataTable, DynamicField, PageHeader, PageContainer, StatCard, EmptyState, ErrorState, AccessDenied, OfflineBanner, LiveIndicator, StaleBadge, AuditDiff, ConflictDialog, PermissionMatrix, ColumnBuilder, ForecastChart, CitationChip, ChatPanel.
 
