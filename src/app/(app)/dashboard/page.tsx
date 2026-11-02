@@ -31,7 +31,13 @@ const ACTION_LABELS: Record<string, string> = {
 
 function Stat({ label, value, href }: { label: string; value: string; href?: string }) {
   const content = (
-    <Card className={href ? "hover:bg-accent/50 h-full transition-colors duration-[var(--motion-fast)]" : "h-full"}>
+    <Card
+      className={
+        href
+          ? "surface-soft hover:shadow-raised h-full transition-shadow duration-[var(--motion-base)]"
+          : "surface-soft h-full"
+      }
+    >
       <CardHeader>
         <CardDescription>{label}</CardDescription>
         <CardTitle className="text-3xl tabular-nums">{value}</CardTitle>

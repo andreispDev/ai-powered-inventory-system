@@ -5,6 +5,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NativeSelect } from "@/components/ui/native-select";
 import { PAGE_SIZES, pageCount } from "@/lib/pagination";
 
 /** Table state lives in the URL, so it survives reload, Back and shared links. */
@@ -42,15 +43,15 @@ export function TablePagination({ total, page, pageSize }: { total: number; page
         {pending && <Loader2 className="text-muted-foreground size-4 animate-spin" aria-label="Loading" />}
         <label className="text-muted-foreground flex items-center gap-2 text-xs">
           Rows
-          <select
-            className="border-input bg-background text-foreground h-8 rounded-md border px-1 text-sm"
+          <NativeSelect
+            className="w-20"
             value={pageSize}
             onChange={(event) => set({ size: event.target.value })}
           >
             {PAGE_SIZES.map((size) => (
               <option key={size}>{size}</option>
             ))}
-          </select>
+          </NativeSelect>
         </label>
         <Button
           variant="outline"
@@ -118,9 +119,9 @@ export function TableFilter({
 }) {
   const { params, set } = useUrlState();
   return (
-    <select
+    <NativeSelect
       aria-label={label}
-      className="border-input bg-background h-9 max-w-48 rounded-md border px-2 text-sm"
+      className="w-auto max-w-48"
       value={params.get(name) ?? ""}
       onChange={(event) => set({ [name]: event.target.value || null })}
     >
@@ -130,6 +131,6 @@ export function TableFilter({
           {option.label}
         </option>
       ))}
-    </select>
+    </NativeSelect>
   );
 }

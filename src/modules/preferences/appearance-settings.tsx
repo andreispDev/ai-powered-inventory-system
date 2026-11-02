@@ -3,7 +3,7 @@
 import { useAppearance } from "@/components/providers/appearance-provider";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { SCALES, type Mode } from "@/lib/appearance";
+import { FONTS, SCALES, type Mode } from "@/lib/appearance";
 import { oklchToCss, THEMES } from "@/lib/theme-tokens";
 import { cn } from "@/lib/utils";
 
@@ -14,7 +14,7 @@ const MODES: { id: Mode; label: string }[] = [
 ];
 
 export function AppearanceSettings() {
-  const { mode, theme, scale, update } = useAppearance();
+  const { mode, theme, scale, font, update } = useAppearance();
 
   return (
     <>
@@ -50,6 +50,30 @@ export function AppearanceSettings() {
             >
               {s.label} ({s.percent}%)
             </Button>
+          ))}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Font</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-2 sm:grid-cols-3">
+          {FONTS.map((f) => (
+            <button
+              key={f.id}
+              type="button"
+              aria-pressed={font === f.id}
+              onClick={() => update({ font: f.id })}
+              style={{ fontFamily: f.variable }}
+              className={cn(
+                "hover:bg-accent shadow-card rounded-lg border px-3 py-3 text-left transition-colors duration-[var(--motion-fast)]",
+                font === f.id && "border-ring ring-ring ring-1",
+              )}
+            >
+              <span className="block text-2xl font-semibold">Aa</span>
+              <span className="text-sm">{f.label}</span>
+            </button>
           ))}
         </CardContent>
       </Card>

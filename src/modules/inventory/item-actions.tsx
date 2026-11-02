@@ -1,28 +1,36 @@
 "use client";
 
+import { ArrowDownToLine, ArrowUpFromLine, RotateCcw, SlidersHorizontal } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { FormError, FormField, SubmitButton } from "@/components/forms/form";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+import { Confirm } from "@/components/feedback/confirm";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { useSubmit } from "@/hooks/use-submit";
+import { cn } from "@/lib/utils";
 import { deleteItem, moveStock, restoreItem } from "./actions";
-import { MOVEMENT_TYPES } from "./schemas";
+import { deltaOf, MOVEMENT_TYPES } from "./schemas";
 
 type MovementType = (typeof MOVEMENT_TYPES)[number]["value"];
+
+const ICONS: Record<MovementType, typeof RotateCcw> = {
+  receive: ArrowDownToLine,
+  issue: ArrowUpFromLine,
+  return: RotateCcw,
+  adjust: SlidersHorizontal,
+};
 
 export function MoveStockDialog({ itemId, unit, quantity }: { itemId: string; unit: string; quantity: number }) {
   const router = useRouter();
@@ -32,9 +40,12 @@ export function MoveStockDialog({ itemId, unit, quantity }: { itemId: string; un
   const [amount, setAmount] = useState("");
   const [reason, setReason] = useState("");
 
+  const parsed = Number(amount);
+  const after = amount !== "" && Number.isInteger(parsed) ? quantity + deltaOf(type, parsed) : null;
+
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
-    const result = await submit({ itemId, type, amount: Number(amount), reason });
+    const result = await submit({ itemId, type, amount: parsed, reason });
     if (!result?.ok) return;
     toast.success(`Stock is now ${result.data.quantity} ${unit}.`);
     setOpen(false);
@@ -51,25 +62,36 @@ export function MoveStockDialog({ itemId, unit, quantity }: { itemId: string; un
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Record a stock movement</DialogTitle>
+          <DialogDescription>Every change is kept in this item&apos;s history.</DialogDescription>
         </DialogHeader>
         <form onSubmit={onSubmit} className="space-y-4">
-          <p className="text-muted-foreground text-sm">
-            Current stock: {quantity} {unit}
-          </p>
-          <FormField id="type" label="Type" help={MOVEMENT_TYPES.find((m) => m.value === type)?.help}>
-            <select
-              id="type"
-              className="border-input bg-background h-9 w-full rounded-md border px-2 text-sm"
-              value={type}
-              onChange={(event) => setType(event.target.value as MovementType)}
-            >
-              {MOVEMENT_TYPES.map((m) => (
-                <option key={m.value} value={m.value}>
-                  {m.label}
-                </option>
-              ))}
-            </select>
-          </FormField>
+          <fieldset>
+            <legend className="mb-1.5 text-sm font-medium">Type</legend>
+            <div className="grid grid-cols-2 gap-2">
+              {MOVEMENT_TYPES.map((movement) => {
+                const Icon = ICONS[movement.value];
+                const selected = type === movement.value;
+                return (
+                  <button
+                    key={movement.value}
+                    type="button"
+                    aria-pressed={selected}
+                    onClick={() => setType(movement.value)}
+                    className={cn(
+                      "hover:bg-accent shadow-card rounded-lg border p-2.5 text-left transition-colors duration-[var(--motion-fast)]",
+                      selected && "border-ring ring-ring bg-accent ring-1",
+                    )}
+                  >
+                    <span className="flex items-center gap-1.5 text-sm font-medium">
+                      <Icon className="size-4" aria-hidden />
+                      {movement.label}
+                    </span>
+                    <span className="text-muted-foreground mt-0.5 block text-xs">{movement.help}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </fieldset>
           <FormField
             id="amount"
             label="Amount"
@@ -82,8 +104,29 @@ export function MoveStockDialog({ itemId, unit, quantity }: { itemId: string; un
           <FormField id="reason" label="Reason" required errors={state.fieldErrors.reason}>
             <Input id="reason" required value={reason} onChange={(event) => setReason(event.target.value)} />
           </FormField>
+          <dl className="bg-muted/60 flex justify-between rounded-lg px-3 py-2 text-sm" aria-live="polite">
+            <div>
+              <dt className="text-muted-foreground text-xs">Now</dt>
+              <dd className="font-medium tabular-nums">
+                {quantity} {unit}
+              </dd>
+            </div>
+            <div className="text-right">
+              <dt className="text-muted-foreground text-xs">After this</dt>
+              <dd className={cn("font-medium tabular-nums", after !== null && after < 0 && "text-destructive")}>
+                {after === null ? "—" : `${after} ${unit}`}
+              </dd>
+            </div>
+          </dl>
           <FormError state={state} />
-          <SubmitButton state={state}>Record movement</SubmitButton>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button type="button" variant="ghost">
+                Cancel
+              </Button>
+            </DialogClose>
+            <SubmitButton state={state}>Record movement</SubmitButton>
+          </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
@@ -94,35 +137,23 @@ export function DeleteItemButton({ id, name }: { id: string; name: string }) {
   const router = useRouter();
   const { submit, state } = useSubmit(deleteItem);
   return (
-    <AlertDialog>
-      <AlertDialogTrigger asChild>
-        <Button variant="outline" disabled={state.pending || state.offline}>
-          Delete
-        </Button>
-      </AlertDialogTrigger>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Delete {name}?</AlertDialogTitle>
-          <AlertDialogDescription>
-            It leaves the inventory list, and an admin can restore it. Its history is kept.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction
-            onClick={async () => {
-              const result = await submit({ id });
-              if (result?.ok) {
-                toast.success("Item deleted.");
-                router.push("/inventory");
-              } else if (result) toast.error(result.message);
-            }}
-          >
-            Delete
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+    <Confirm
+      title={`Delete ${name}?`}
+      description="It leaves the inventory list, and an admin can restore it. Its history is kept."
+      confirmLabel="Delete item"
+      destructive
+      onConfirm={async () => {
+        const result = await submit({ id });
+        if (result?.ok) {
+          toast.success("Item deleted.");
+          router.push("/inventory");
+        } else if (result) toast.error(result.message);
+      }}
+    >
+      <Button variant="outline" disabled={state.pending || state.offline}>
+        Delete
+      </Button>
+    </Confirm>
   );
 }
 
@@ -130,10 +161,11 @@ export function RestoreItemButton({ id }: { id: string }) {
   const router = useRouter();
   const { submit, state } = useSubmit(restoreItem);
   return (
-    <Button
-      variant="outline"
-      disabled={state.pending || state.offline}
-      onClick={async () => {
+    <Confirm
+      title="Restore this item?"
+      description="It goes back into the inventory list with its history."
+      confirmLabel="Restore item"
+      onConfirm={async () => {
         const result = await submit({ id });
         if (result?.ok) {
           toast.success("Item restored.");
@@ -141,7 +173,9 @@ export function RestoreItemButton({ id }: { id: string }) {
         } else if (result) toast.error(result.message);
       }}
     >
-      Restore
-    </Button>
+      <Button variant="outline" disabled={state.pending || state.offline}>
+        Restore
+      </Button>
+    </Confirm>
   );
 }

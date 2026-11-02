@@ -3,12 +3,11 @@
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
-import { FormError, FormField, SubmitButton } from "@/components/forms/form";
+import { FormActions, FormError, FormField } from "@/components/forms/form";
 import { Input } from "@/components/ui/input";
+import { NativeSelect } from "@/components/ui/native-select";
 import { useSubmit } from "@/hooks/use-submit";
 import { createAccount } from "./actions";
-
-const SELECT = "border-input bg-background h-9 w-full rounded-md border px-2 text-sm";
 
 export function AccountForm({
   canCreateAdmin,
@@ -62,23 +61,21 @@ export function AccountForm({
       </FormField>
       {canCreateAdmin && (
         <FormField id="role" label="Role" errors={state.fieldErrors.role}>
-          <select
+          <NativeSelect
             id="role"
-            className={SELECT}
             value={values.role}
             onChange={(event) => setValues({ ...values, role: event.target.value as "admin" | "user" })}
           >
             <option value="admin">Admin</option>
             <option value="user">User</option>
-          </select>
+          </NativeSelect>
         </FormField>
       )}
       {offices && !fixedOfficeId && (
         <FormField id="officeId" label="Office" required errors={state.fieldErrors.officeId}>
-          <select
+          <NativeSelect
             id="officeId"
             required
-            className={SELECT}
             value={values.officeId}
             onChange={(event) => setValues({ ...values, officeId: event.target.value })}
           >
@@ -88,11 +85,11 @@ export function AccountForm({
                 {office.name}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </FormField>
       )}
       <FormError state={state} />
-      <SubmitButton state={state}>Create account</SubmitButton>
+      <FormActions state={state} submitLabel="Create account" showCancel={onDone !== "stay"} />
     </form>
   );
 }

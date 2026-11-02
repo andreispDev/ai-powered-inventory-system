@@ -18,6 +18,8 @@ const csp = [
 
 const nextConfig: NextConfig = {
   /* config options here */
+  // Lets a second dev server run alongside the usual one, for checks.
+  distDir: process.env.NEXT_DIST_DIR ?? ".next",
   experimental: {
     agentFeedback: true,
   },

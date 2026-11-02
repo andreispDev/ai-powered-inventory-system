@@ -4,12 +4,14 @@ import { ArrowDown, ArrowUp, Pencil, RotateCcw, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
+import { Confirm } from "@/components/feedback/confirm";
 import { FormError, FormField, SubmitButton } from "@/components/forms/form";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
+import { NativeSelect } from "@/components/ui/native-select";
 import { useSubmit } from "@/hooks/use-submit";
 import { addField, moveField, setFieldRetired, updateField } from "./actions";
 import { FIELD_TYPES, isChoice, isNumeric, type FieldConfig, type FieldType } from "./field-schema";
@@ -85,10 +87,9 @@ function FieldEditor({ categoryId, field, onClose }: { categoryId: string; field
           <Input id={id("label")} required value={label} onChange={(event) => setLabel(event.target.value)} />
         </FormField>
         <FormField id={id("type")} label="Type" help={field ? "The type can't change once created." : undefined}>
-          <select
+          <NativeSelect
             id={id("type")}
             disabled={!!field}
-            className="border-input bg-background h-9 w-full rounded-md border px-2 text-sm disabled:opacity-60"
             value={type}
             onChange={(event) => setType(event.target.value as FieldType)}
           >
@@ -97,7 +98,7 @@ function FieldEditor({ categoryId, field, onClose }: { categoryId: string; field
                 {t.label}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </FormField>
       </div>
       {isChoice(type) && (
@@ -191,10 +192,26 @@ function FieldRow({ categoryId, field, first, last, canEdit }: { categoryId: str
         </>
       )}
       {canEdit && (
-        <Button variant="ghost" size="icon" aria-label={field.retired ? `Restore ${field.label}` : `Retire ${field.label}`} disabled={retire.state.pending}
-          onClick={async () => after(await retire.submit({ id: field.id, retired: !field.retired }))}>
-          {field.retired ? <RotateCcw aria-hidden /> : <Trash2 aria-hidden />}
-        </Button>
+        <Confirm
+          title={field.retired ? `Restore ${field.label}?` : `Retire ${field.label}?`}
+          description={
+            field.retired
+              ? "The column comes back with the values items already had."
+              : "It's hidden from forms and tables. Its values are kept, so you can restore it later."
+          }
+          confirmLabel={field.retired ? "Restore column" : "Retire column"}
+          destructive={!field.retired}
+          onConfirm={async () => after(await retire.submit({ id: field.id, retired: !field.retired }))}
+        >
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label={field.retired ? `Restore ${field.label}` : `Retire ${field.label}`}
+            disabled={retire.state.pending}
+          >
+            {field.retired ? <RotateCcw aria-hidden /> : <Trash2 aria-hidden />}
+          </Button>
+        </Confirm>
       )}
     </li>
   );

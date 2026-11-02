@@ -25,7 +25,7 @@ The people using this spend hours in it, doing repetitive and consequential work
 
 ### Typography
 
-**Geist Sans** for interface text and **Geist Mono** for codes, SKUs and IDs. Both are minimalist, highly legible at small sizes, and already loaded through `next/font` in the starter, so there's no layout shift. Remove the starter's Arial override in `globals.css`.
+People choose **Geist** (default), **Inter** or **Lato** for interface text in Settings or the appearance menu. **Geist Mono** is used for codes, SKUs and IDs. All load through `next/font`, so there's no layout shift, and only Geist is preloaded.
 
 All sizes are in `rem`, so they follow the UI scale.
 
@@ -44,7 +44,8 @@ Numbers in tables and KPIs use `tabular-nums` and align right, so columns are ea
 
 - **Grid:** 4px base (Tailwind's default scale), so everything scales with `rem`.
 - **Radius:** `--radius: 0.5rem`: controls 0.375rem, cards 0.625rem.
-- **Borders over shadows:** cards use a 1px border. Shadows are only for things that float: menus, dialogs, toasts.
+- **Small shadows:** three levels: `shadow-card` for cards, inputs and buttons, `shadow-raised` for hover and the login card, and `shadow-overlay` for dialogs. Dark mode uses stronger values so they still show.
+- **Faint gradients:** at most 5% of the theme color on the page background, sidebar, stat cards and empty states, and 12% behind the login card. Never behind body text at a level that changes its contrast.
 - **Control height:** 2.25rem default; 2rem in table toolbars. At Compact, this comes to about 32px, which meets the WCAG 2.2 minimum target size. Touch screens use a minimum of 2.75rem.
 
 ### Icons
@@ -248,10 +249,10 @@ Base: shadcn/ui with Radix primitives. Components live in our repo and we own th
 |---|---|
 | **Button** | `loading` state with a stable width. Destructive variant is outlined until confirmed. Primary is limited to one per view area |
 | **Input, Select** | Consistent height, inline error slot, optional prefix and suffix for units and currency |
-| **Card** | Border only, no shadow, optional header actions |
+| **Card** | Thin border and a small shadow, optional header actions |
 | **Badge** | Status variants with `-subtle` backgrounds and a dot, tied to a status map |
 | **Dialog** | Standard sizes, sticky header and footer, and focus returned to the opener |
-| **Alert Dialog** | Requires naming the thing for high-risk actions, and states the effect |
+| **Alert Dialog** | Shared `Confirm` component. Sign-out and every one-click change ask first, and say what will happen. Forms are confirmed by their own submit button |
 | **Toast** (Sonner) | Bottom-right. Undo action for reversible operations. Errors persist until dismissed |
 | **Sidebar** | shadcn sidebar with rail and our groups |
 | **Command** | Global palette with permission-aware results |

@@ -49,7 +49,7 @@ export function EmptyState({
   description: string;
 }) {
   return (
-    <div className="flex flex-col items-center rounded-lg border border-dashed px-6 py-12 text-center">
+    <div className="surface-soft flex flex-col items-center rounded-lg border border-dashed px-6 py-12 text-center">
       <Icon className="text-muted-foreground mb-3 size-6" aria-hidden />
       <p className="font-medium">{title}</p>
       <p className="text-muted-foreground mt-1 max-w-sm text-sm">{description}</p>

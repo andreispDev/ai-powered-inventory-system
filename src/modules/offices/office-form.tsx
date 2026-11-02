@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
-import { FormError, FormField, SubmitButton } from "@/components/forms/form";
+import { FormActions, FormError, FormField } from "@/components/forms/form";
 import { Input } from "@/components/ui/input";
 import { useSubmit } from "@/hooks/use-submit";
 import { createOffice, updateOffice } from "./actions";
@@ -53,7 +53,7 @@ export function OfficeForm({ office }: { office?: Values }) {
         <Input {...bind("contactEmail")} type="email" />
       </FormField>
       <FormError state={state} />
-      <SubmitButton state={state}>{office ? "Save office" : "Create office"}</SubmitButton>
+      <FormActions state={state} submitLabel={office ? "Save office" : "Create office"} showCancel={!office} />
     </form>
   );
 }

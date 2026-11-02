@@ -3,8 +3,9 @@
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
-import { FormError, FormField, SubmitButton } from "@/components/forms/form";
+import { FormActions, FormError, FormField } from "@/components/forms/form";
 import { Input } from "@/components/ui/input";
+import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
 import { useSubmit } from "@/hooks/use-submit";
 import { createCategory } from "./actions";
@@ -33,9 +34,8 @@ export function CategoryForm({ parents }: { parents: readonly { id: string; name
         <Textarea id="description" value={description} onChange={(event) => setDescription(event.target.value)} />
       </FormField>
       <FormField id="parentId" label="Inside category" help="Optional. Up to 3 levels." errors={state.fieldErrors.parentId}>
-        <select
+        <NativeSelect
           id="parentId"
-          className="border-input bg-background h-9 w-full rounded-md border px-2 text-sm"
           value={parentId}
           onChange={(event) => setParentId(event.target.value)}
         >
@@ -45,10 +45,10 @@ export function CategoryForm({ parents }: { parents: readonly { id: string; name
               {parent.name}
             </option>
           ))}
-        </select>
+        </NativeSelect>
       </FormField>
       <FormError state={state} />
-      <SubmitButton state={state}>Create category</SubmitButton>
+      <FormActions state={state} submitLabel="Create category" />
     </form>
   );
 }

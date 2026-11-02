@@ -83,7 +83,7 @@ export function SignInForm() {
           />
         </div>
         {error && (
-          <p role="alert" className="text-destructive text-sm">
+          <p role="alert" className="border-destructive/30 bg-destructive/5 text-destructive rounded-lg border px-3 py-2 text-sm">
             {error}
           </p>
         )}
@@ -117,7 +117,7 @@ export function SignInForm() {
         />
       </div>
       {error && (
-        <p role="alert" className="text-destructive text-sm">
+        <p role="alert" className="border-destructive/30 bg-destructive/5 text-destructive rounded-lg border px-3 py-2 text-sm">
           {error}
         </p>
       )}

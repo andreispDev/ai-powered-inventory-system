@@ -3,8 +3,9 @@
 import { Boxes, LogOut, Monitor, Moon, Palette, Settings, Sun, User } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { OfflineBanner, ConnectionIndicator } from "@/components/connectivity/connectivity";
+import { Confirm } from "@/components/feedback/confirm";
 import { useAppearance } from "@/components/providers/appearance-provider";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -35,7 +36,7 @@ import {
   SidebarRail,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
-import { SCALES, type Appearance, type Mode, type Scale } from "@/lib/appearance";
+import { FONTS, SCALES, type Appearance, type Font, type Mode, type Scale } from "@/lib/appearance";
 import { signOut } from "@/lib/auth-client";
 import { THEMES } from "@/lib/theme-tokens";
 import type { Permission, Role } from "@/server/authz/catalog";
@@ -71,7 +72,7 @@ function AppSidebar({ user }: { user: ShellUser }) {
           <SidebarMenuItem>
             <SidebarMenuButton asChild size="lg" tooltip="Inventory">
               <Link href="/dashboard">
-                <span className="bg-primary text-primary-foreground flex size-8 shrink-0 items-center justify-center rounded-md">
+                <span className="brand-mark text-primary-foreground shadow-card flex size-8 shrink-0 items-center justify-center rounded-md">
                   <Boxes className="size-4" aria-hidden />
                 </span>
                 <span className="font-semibold">Inventory</span>
@@ -130,7 +131,7 @@ const MODES: { id: Mode; label: string; icon: typeof Sun }[] = [
 ];
 
 function AppearanceMenu() {
-  const { mode, theme, scale, update } = useAppearance();
+  const { mode, theme, scale, font, update } = useAppearance();
 
   return (
     <DropdownMenu>
@@ -160,6 +161,15 @@ function AppearanceMenu() {
           ))}
         </DropdownMenuRadioGroup>
         <DropdownMenuSeparator />
+        <DropdownMenuLabel>Font</DropdownMenuLabel>
+        <DropdownMenuRadioGroup value={font} onValueChange={(value) => update({ font: value as Font })}>
+          {FONTS.map((f) => (
+            <DropdownMenuRadioItem key={f.id} value={f.id} style={{ fontFamily: f.variable }}>
+              {f.label}
+            </DropdownMenuRadioItem>
+          ))}
+        </DropdownMenuRadioGroup>
+        <DropdownMenuSeparator />
         <DropdownMenuLabel>Color theme</DropdownMenuLabel>
         <DropdownMenuRadioGroup value={theme} onValueChange={(value) => update({ theme: value })}>
           {THEMES.map((t) => (
@@ -174,7 +184,17 @@ function AppearanceMenu() {
 }
 
 function UserMenu({ user }: { user: ShellUser }) {
+  const [confirmingSignOut, setConfirmingSignOut] = useState(false);
   return (
+    <>
+    <Confirm
+      open={confirmingSignOut}
+      onOpenChange={setConfirmingSignOut}
+      title="Sign out?"
+      description="You'll need a new emailed code to sign in again."
+      confirmLabel="Sign out"
+      onConfirm={() => signOut()}
+    />
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="icon" aria-label="Account menu" className="rounded-full">
@@ -207,12 +227,13 @@ function UserMenu({ user }: { user: ShellUser }) {
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onSelect={() => signOut()}>
+        <DropdownMenuItem onSelect={() => setConfirmingSignOut(true)}>
           <LogOut aria-hidden />
           Sign out
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
+    </>
   );
 }
 
@@ -228,7 +249,7 @@ export function AppShell({ user, children }: { user: ShellUser; children: ReactN
       </a>
       <AppSidebar user={user} />
       <SidebarInset>
-        <header className="bg-background/95 sticky top-0 z-10 flex h-14 items-center gap-2 border-b px-4 backdrop-blur">
+        <header className="bg-background/90 shadow-card sticky top-0 z-10 flex h-14 items-center gap-2 border-b px-4 backdrop-blur">
           <SidebarTrigger aria-label="Toggle sidebar" />
           <div className="ml-auto flex items-center gap-1">
             <ConnectionIndicator />
@@ -237,7 +258,7 @@ export function AppShell({ user, children }: { user: ShellUser; children: ReactN
           </div>
         </header>
         <OfflineBanner />
-        <main id="main" className="flex-1 px-4 py-6 md:px-6 lg:px-8">
+        <main id="main" className="app-canvas flex-1 px-4 py-6 md:px-6 lg:px-8">
           {children}
         </main>
       </SidebarInset>

@@ -3,9 +3,10 @@
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
-import { FormError, FormField, SubmitButton } from "@/components/forms/form";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { FormActions, FormError, FormField } from "@/components/forms/form";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
 import { useSubmit } from "@/hooks/use-submit";
 import type { FieldDef } from "@/modules/categories/field-schema";
@@ -33,8 +34,6 @@ export type ItemFormValues = {
   notes: string | null;
   attributes: Record<string, unknown>;
 };
-
-const SELECT = "border-input bg-background h-9 w-full rounded-md border px-2 text-sm";
 
 export function ItemForm({
   categoryId,
@@ -99,14 +98,14 @@ export function ItemForm({
       <Card>
         <CardHeader>
           <CardTitle>Details</CardTitle>
+          <CardDescription>The standard information every item has.</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2">
           <div className="sm:col-span-2">{text("name", "Name", { required: true })}</div>
           {text("sku", "SKU or code")}
           <FormField id="status" label="Status" errors={state.fieldErrors.status}>
-            <select
+            <NativeSelect
               id="status"
-              className={SELECT}
               value={values.status}
               onChange={(event) => setValues({ ...values, status: event.target.value as Status })}
             >
@@ -115,7 +114,7 @@ export function ItemForm({
                   {status.label}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
           </FormField>
           {!item && (
             <FormField id="quantity" label="Starting quantity" errors={state.fieldErrors.quantity}>
@@ -143,6 +142,7 @@ export function ItemForm({
         <Card>
           <CardHeader>
             <CardTitle>Category details</CardTitle>
+            <CardDescription>The columns your office set up for this category.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4 sm:grid-cols-2">
             {fields.map((field) => (
@@ -160,7 +160,7 @@ export function ItemForm({
       )}
 
       <FormError state={state} />
-      <SubmitButton state={state}>{item ? "Save item" : "Add item"}</SubmitButton>
+      <FormActions state={state} submitLabel={item ? "Save item" : "Add item"} />
     </form>
   );
 }

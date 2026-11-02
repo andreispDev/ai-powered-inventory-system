@@ -3,10 +3,9 @@
 import { FormField } from "@/components/forms/form";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
+import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
 import { isNumeric, type FieldDef } from "@/modules/categories/field-schema";
-
-const SELECT = "border-input bg-background h-9 w-full rounded-md border px-2 text-sm";
 
 /** Renders any custom column, so every form comes from the same definitions. */
 export function DynamicField({
@@ -38,12 +37,12 @@ export function DynamicField({
         );
       case "select":
         return (
-          <select id={id} className={SELECT} value={String(value ?? "")} onChange={(e) => onChange(e.target.value)}>
+          <NativeSelect id={id} value={String(value ?? "")} onChange={(e) => onChange(e.target.value)}>
             <option value="">Choose…</option>
             {config.options?.map((option) => (
               <option key={option}>{option}</option>
             ))}
-          </select>
+          </NativeSelect>
         );
       case "multi_select": {
         const selected = Array.isArray(value) ? (value as string[]) : [];
@@ -65,14 +64,14 @@ export function DynamicField({
       }
       case "person":
         return (
-          <select id={id} className={SELECT} value={String(value ?? "")} onChange={(e) => onChange(e.target.value)}>
+          <NativeSelect id={id} value={String(value ?? "")} onChange={(e) => onChange(e.target.value)}>
             <option value="">Choose…</option>
             {people.map((person) => (
               <option key={person.id} value={person.id}>
                 {person.name}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         );
       default: {
         const inputType = isNumeric(type)
