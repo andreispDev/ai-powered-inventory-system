@@ -1,8 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { useUrlState } from "@/components/data-table/pagination";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -26,9 +24,7 @@ type Row = {
 const when = (iso: string) => new Date(iso).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "medium" });
 const text = (value: unknown) => (value === undefined || value === null ? "—" : typeof value === "object" ? JSON.stringify(value) : String(value));
 
-export function LogTable({ rows, showOffice, nextBefore }: { rows: Row[]; showOffice: boolean; nextBefore: string | null }) {
-  const router = useRouter();
-  const { params } = useUrlState();
+export function LogTable({ rows, showOffice }: { rows: Row[]; showOffice: boolean }) {
   const [open, setOpen] = useState<Row | null>(null);
   const [mounted, setMounted] = useState(false);
 
@@ -73,23 +69,6 @@ export function LogTable({ rows, showOffice, nextBefore }: { rows: Row[]; showOf
           ))}
         </TableBody>
       </Table>
-      <div className="flex justify-end gap-2 border-t px-3 py-2">
-        <Button variant="outline" size="sm" disabled={!params.get("before")} onClick={() => router.back()}>
-          Previous
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={!nextBefore}
-          onClick={() => {
-            const next = new URLSearchParams(params.toString());
-            next.set("before", nextBefore!);
-            router.push(`?${next.toString()}`);
-          }}
-        >
-          Next
-        </Button>
-      </div>
       <Sheet open={!!open} onOpenChange={(value) => !value && setOpen(null)}>
         <SheetContent className="w-full overflow-y-auto sm:max-w-lg">
           {open && (

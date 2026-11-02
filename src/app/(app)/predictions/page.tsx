@@ -23,7 +23,9 @@ type Props = { searchParams: Promise<SearchParams> };
 async function Content({ searchParams }: Props) {
   const actor = await requireActor();
   if (!actor.permissions.includes("ai.forecast.read")) return <AccessDenied />;
-  const { page, pageSize, offset } = parsePage(await searchParams);
+  const params = await searchParams;
+  const { page, pageSize, offset } = parsePage(params);
+  const accuracyPage = parsePage(params, { prefix: "a" });
   const isDeveloper = actor.role === "developer";
   const { list, summary, accuracy } = await readScoped(actor, async (tx) => ({
     list: await listForecasts(tx, pageSize, offset),
@@ -132,7 +134,7 @@ async function Content({ searchParams }: Props) {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {accuracy.map((row) => (
+                    {accuracy.slice(accuracyPage.offset, accuracyPage.offset + accuracyPage.pageSize).map((row) => (
                       <TableRow key={row.officeId}>
                         <TableCell className="font-medium">{row.officeName}</TableCell>
                         <TableCell>{row.items}</TableCell>
@@ -147,6 +149,7 @@ async function Content({ searchParams }: Props) {
                     ))}
                   </TableBody>
                 </Table>
+                <TablePagination total={accuracy.length} page={accuracyPage.page} pageSize={accuracyPage.pageSize} prefix="a" />
               </CardContent>
             </Card>
           )}

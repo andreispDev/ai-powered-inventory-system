@@ -5,7 +5,7 @@ import { Suspense } from "react";
 import { z } from "zod";
 import { AccessDenied } from "@/components/feedback/access-denied";
 import { PageContainer, PageHeader, TableSkeleton } from "@/components/shell/page";
-import { param, type SearchParams } from "@/lib/pagination";
+import { param, parsePage, type SearchParams } from "@/lib/pagination";
 import { PermissionMatrix, SubjectPicker, type MatrixRow } from "@/modules/permissions/permission-matrix";
 import { requireActor } from "@/server/auth/session";
 import { canEverHold, isAllowed, PERMISSIONS, roleDefault, type Role } from "@/server/authz/catalog";
@@ -23,6 +23,7 @@ async function Content({ searchParams }: Props) {
   if (!actor.permissions.includes("permission.grant")) return <AccessDenied />;
 
   const params = await searchParams;
+  const { page, pageSize, offset } = parsePage(params);
   const selected = param(params, "subject");
   const [type, id] = selected?.split(":") ?? [];
   const subjectType = type === "user" || type === "office" ? type : null;
@@ -116,7 +117,7 @@ async function Content({ searchParams }: Props) {
       )}
       <SubjectPicker options={options} value={selected ?? ""} />
       {subjectType && subjectId && (
-        <PermissionMatrix rows={rows} subjectType={subjectType} subjectId={subjectId} showEffective={!!data.person} />
+        <PermissionMatrix rows={rows.slice(offset, offset + pageSize)} pagination={{ total: rows.length, page, pageSize }} subjectType={subjectType} subjectId={subjectId} showEffective={!!data.person} />
       )}
     </PageContainer>
   );

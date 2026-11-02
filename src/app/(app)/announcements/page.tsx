@@ -1,7 +1,9 @@
-import { desc, eq, sql } from "drizzle-orm";
+import { count, desc, eq, sql } from "drizzle-orm";
 import { Megaphone } from "lucide-react";
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { TablePagination } from "@/components/data-table/pagination";
+import { parsePage, type SearchParams } from "@/lib/pagination";
 import { AccessDenied } from "@/components/feedback/access-denied";
 import { LocalTime } from "@/components/shell/local-time";
 import { EmptyState, PageContainer, PageHeader, TableSkeleton } from "@/components/shell/page";
@@ -14,13 +16,17 @@ import { readScoped } from "@/server/guard/read";
 
 export const metadata: Metadata = { title: "Announcements" };
 
-async function Content() {
+type Props = { searchParams: Promise<SearchParams> };
+
+async function Content({ searchParams }: Props) {
   const actor = await requireActor();
   const global = actor.permissions.includes("announce.all");
   if (!global && !actor.permissions.includes("announce.office")) return <AccessDenied />;
+  const { page, pageSize, offset } = parsePage(await searchParams);
 
   const data = await readScoped(actor, async (tx) => {
-    const rows = await tx.select().from(announcement).orderBy(desc(announcement.createdAt)).limit(30);
+    const rows = await tx.select().from(announcement).orderBy(desc(announcement.createdAt)).limit(pageSize).offset(offset);
+    const [{ total }] = await tx.select({ total: count() }).from(announcement);
     const withCounts = [];
     for (const row of rows) {
       const result = (await tx.execute(sql`select total::int, read::int from announcement_read_counts(${row.id}::uuid)`)) as unknown as {
@@ -29,7 +35,7 @@ async function Content() {
       withCounts.push({ ...row, ...result.rows[0] });
     }
     const offices = global ? await tx.select({ id: office.id, name: office.name }).from(office).where(eq(office.status, "active")) : [];
-    return { rows: withCounts, offices };
+    return { rows: withCounts, offices, total };
   });
 
   return (
@@ -44,7 +50,7 @@ async function Content() {
             <AnnouncementForm global={global} offices={data.offices} officeName={actor.officeName} />
           </CardContent>
         </Card>
-        {data.rows.length === 0 ? (
+        {data.total === 0 ? (
           <EmptyState icon={Megaphone} title="No announcements yet" description="Sent announcements appear here with how many people read them." />
         ) : (
           <Card className="gap-0 overflow-hidden py-0">
@@ -64,6 +70,7 @@ async function Content() {
                 </li>
               ))}
             </ul>
+            <TablePagination total={data.total} page={page} pageSize={pageSize} />
           </Card>
         )}
       </div>
@@ -71,10 +78,10 @@ async function Content() {
   );
 }
 
-export default function AnnouncementsPage() {
+export default function AnnouncementsPage(props: Props) {
   return (
     <Suspense fallback={<TableSkeleton width="default" />}>
-      <Content />
+      <Content {...props} />
     </Suspense>
   );
 }

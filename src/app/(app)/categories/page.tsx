@@ -3,12 +3,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { RowActions, RowLink } from "@/components/data-table/row-actions";
+import { TablePagination } from "@/components/data-table/pagination";
 import { AccessDenied } from "@/components/feedback/access-denied";
 import { EmptyState, PageContainer, PageHeader, TableSkeleton } from "@/components/shell/page";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { parsePage, type SearchParams } from "@/lib/pagination";
 import { listCategories } from "@/modules/categories/queries";
 import { CategoryArchiveButton } from "@/modules/categories/archive-button";
 import { requireActor } from "@/server/auth/session";
@@ -16,10 +18,13 @@ import { readScoped } from "@/server/guard/read";
 
 export const metadata: Metadata = { title: "Categories" };
 
-async function Content() {
+type Props = { searchParams: Promise<SearchParams> };
+
+async function Content({ searchParams }: Props) {
   const actor = await requireActor();
   if (!actor.permissions.includes("category.read")) return <AccessDenied />;
   const rows = await readScoped(actor, listCategories);
+  const { page, pageSize, offset } = parsePage(await searchParams);
   const canCreate = actor.permissions.includes("category.create");
   const showOffice = !actor.officeId;
   const nameOf = new Map(rows.map((row) => [row.id, row.name]));
@@ -62,7 +67,7 @@ async function Content() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {rows.map((row) => (
+              {rows.slice(offset, offset + pageSize).map((row) => (
                 <TableRow key={row.id}>
                   <TableCell>
                     <Link href={`/categories/${row.id}`} className="font-medium hover:underline">
@@ -88,16 +93,17 @@ async function Content() {
               ))}
             </TableBody>
           </Table>
+          <TablePagination total={rows.length} page={page} pageSize={pageSize} />
         </Card>
       )}
     </PageContainer>
   );
 }
 
-export default function CategoriesPage() {
+export default function CategoriesPage(props: Props) {
   return (
     <Suspense fallback={<TableSkeleton />}>
-      <Content />
+      <Content {...props} />
     </Suspense>
   );
 }

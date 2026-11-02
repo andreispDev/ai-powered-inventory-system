@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
-import { useUrlState } from "@/components/data-table/pagination";
+import { TablePagination, useUrlState } from "@/components/data-table/pagination";
 import { Confirm } from "@/components/feedback/confirm";
 import { FormError, FormField, SubmitButton } from "@/components/forms/form";
 import { Badge } from "@/components/ui/badge";
@@ -112,11 +112,13 @@ function GrantDialog({
 
 export function PermissionMatrix({
   rows,
+  pagination,
   subjectType,
   subjectId,
   showEffective,
 }: {
   rows: MatrixRow[];
+  pagination: { total: number; page: number; pageSize: number };
   subjectType: "user" | "office";
   subjectId: string;
   showEffective: boolean;
@@ -189,6 +191,7 @@ export function PermissionMatrix({
           ))}
         </TableBody>
       </Table>
+      <TablePagination {...pagination} />
     </Card>
   );
 }

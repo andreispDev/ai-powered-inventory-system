@@ -107,7 +107,7 @@ export async function getItem(tx: ScopedTx, id: string) {
   return row;
 }
 
-export const listMovements = (tx: ScopedTx, itemId: string) =>
+export const listMovements = (tx: ScopedTx, itemId: string, limit: number, offset: number) =>
   tx
     .select({
       id: stockMovement.id,
@@ -123,7 +123,13 @@ export const listMovements = (tx: ScopedTx, itemId: string) =>
     .leftJoin(appUser, eq(stockMovement.actorId, appUser.id))
     .where(eq(stockMovement.itemId, itemId))
     .orderBy(desc(stockMovement.occurredAt), desc(stockMovement.id))
-    .limit(50);
+    .limit(limit)
+    .offset(offset);
+
+export async function countMovements(tx: ScopedTx, itemId: string) {
+  const [{ total }] = await tx.select({ total: count() }).from(stockMovement).where(eq(stockMovement.itemId, itemId));
+  return total;
+}
 
 export const listAttachments = (tx: ScopedTx, itemId: string) =>
   tx

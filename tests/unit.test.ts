@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { backtest, forecastItem, holt, keepsTheNumbers, startOfWeek, tsb, type ForecastInput } from "@/modules/forecast/engine";
 import { crumbsFor } from "@/components/shell/breadcrumbs";
+import { parsePage } from "@/lib/pagination";
 import { canStartSession, isPastAbsoluteLimit } from "@/server/auth/sign-in-rules";
 import { effectivePermissions, isAllowed, type Grant } from "@/server/authz/catalog";
 import { contrast, themeTokens, THEMES, type Oklch } from "@/lib/theme-tokens";
@@ -196,5 +197,22 @@ describe("breadcrumbs", () => {
 
   it("skips the console grouping, which has no page", () => {
     expect(crumbsFor("/console/offices").map((crumb) => crumb.href)).toEqual(["/dashboard", "/console/offices"]);
+  });
+});
+
+describe("pagination", () => {
+  it("reads page and size, with safe defaults", () => {
+    expect(parsePage({})).toEqual({ page: 1, pageSize: 25, offset: 0 });
+    expect(parsePage({ page: "3", size: "50" })).toEqual({ page: 3, pageSize: 50, offset: 100 });
+    expect(parsePage({ page: "-1", size: "9999" })).toEqual({ page: 1, pageSize: 25, offset: 0 });
+  });
+
+  it("keeps a second table's place separate", () => {
+    expect(parsePage({ page: "4", apage: "2" }, { prefix: "a" })).toEqual({ page: 2, pageSize: 25, offset: 25 });
+  });
+
+  it("caps deep pages, with more room for logs", () => {
+    expect(parsePage({ page: "999999" }).offset).toBeLessThanOrEqual(10_000);
+    expect(parsePage({ page: "1000" }, { maxOffset: 1_000_000 }).offset).toBe(24_975);
   });
 });

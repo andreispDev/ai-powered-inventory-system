@@ -28,7 +28,7 @@ export function useUrlState() {
   return { params, set, pending };
 }
 
-export function TablePagination({ total, page, pageSize }: { total: number; page: number; pageSize: number }) {
+export function TablePagination({ total, page, pageSize, prefix = "" }: { total: number; page: number; pageSize: number; prefix?: string }) {
   const { set, pending } = useUrlState();
   const pages = pageCount(total, pageSize);
   const first = total === 0 ? 0 : (page - 1) * pageSize + 1;
@@ -46,7 +46,7 @@ export function TablePagination({ total, page, pageSize }: { total: number; page
           <NativeSelect
             className="w-20"
             value={pageSize}
-            onChange={(event) => set({ size: event.target.value })}
+            onChange={(event) => set({ [`${prefix}size`]: event.target.value, [`${prefix}page`]: null }, false)}
           >
             {PAGE_SIZES.map((size) => (
               <option key={size}>{size}</option>
@@ -58,7 +58,7 @@ export function TablePagination({ total, page, pageSize }: { total: number; page
           size="icon"
           disabled={page <= 1}
           aria-label="Previous page"
-          onClick={() => set({ page: String(page - 1) }, false)}
+          onClick={() => set({ [`${prefix}page`]: String(page - 1) }, false)}
         >
           <ChevronLeft aria-hidden />
         </Button>
@@ -70,7 +70,7 @@ export function TablePagination({ total, page, pageSize }: { total: number; page
           size="icon"
           disabled={page >= pages}
           aria-label="Next page"
-          onClick={() => set({ page: String(page + 1) }, false)}
+          onClick={() => set({ [`${prefix}page`]: String(page + 1) }, false)}
         >
           <ChevronRight aria-hidden />
         </Button>

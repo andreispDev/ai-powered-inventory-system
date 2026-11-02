@@ -6,6 +6,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { z } from "zod";
 import { RowActions, RowLink } from "@/components/data-table/row-actions";
+import { TablePagination } from "@/components/data-table/pagination";
 import { AccessDenied } from "@/components/feedback/access-denied";
 import { LocalTime } from "@/components/shell/local-time";
 import { PageContainer, PageHeader, PageSkeleton } from "@/components/shell/page";
@@ -13,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { parsePage, type SearchParams } from "@/lib/pagination";
 import { listFields } from "@/modules/categories/queries";
 import { formatForecastDay } from "@/modules/forecast/engine";
 import { ForecastBadge, StockoutDate } from "@/modules/forecast/forecast-parts";
@@ -22,7 +24,7 @@ import { listItemAssignments } from "@/modules/custody/queries";
 import { Attachments } from "@/modules/inventory/attachments";
 import { DeleteItemButton, MoveStockDialog, RestoreItemButton } from "@/modules/inventory/item-actions";
 import { formatAttribute, statusLabel } from "@/modules/inventory/format";
-import { getItem, listAttachments, listMovements, listPeople } from "@/modules/inventory/queries";
+import { countMovements, getItem, listAttachments, listMovements, listPeople } from "@/modules/inventory/queries";
 import { requireActor } from "@/server/auth/session";
 import { writeAudit } from "@/server/audit/writer";
 import { appUser, auditLog } from "@/server/db/schema";
@@ -30,7 +32,7 @@ import { readScoped } from "@/server/guard/read";
 
 export const metadata: Metadata = { title: "Item" };
 
-type Props = { params: Promise<{ itemId: string }> };
+type Props = { params: Promise<{ itemId: string }>; searchParams: Promise<SearchParams> };
 
 function Detail({ rows }: { rows: [string, string | number | null | undefined][] }) {
   return (
@@ -45,18 +47,21 @@ function Detail({ rows }: { rows: [string, string | number | null | undefined][]
   );
 }
 
-async function Content({ params }: Props) {
+async function Content({ params, searchParams }: Props) {
   const actor = await requireActor();
   const can = (permission: (typeof actor.permissions)[number]) => actor.permissions.includes(permission);
   if (!can("item.read")) return <AccessDenied />;
   const { itemId } = await params;
   if (!z.uuid().safeParse(itemId).success) notFound();
 
+  const { page, pageSize, offset } = parsePage(await searchParams);
+
   const data = await readScoped(actor, async (tx) => {
     const row = await getItem(tx, itemId);
     if (!row) return null;
     const fields = await listFields(tx, row.item.categoryId, true);
-    const movements = await listMovements(tx, itemId);
+    const movements = await listMovements(tx, itemId, pageSize, offset);
+    const movementCount = await countMovements(tx, itemId);
     const people = await listPeople(tx);
     const assignments = await listItemAssignments(tx, itemId);
     const attachments = row.kind === "records" ? await listAttachments(tx, itemId) : [];
@@ -77,7 +82,7 @@ async function Content({ params }: Props) {
       .where(and(sql`${auditLog.entityType} = 'item'`, eq(auditLog.entityId, itemId), seesAll ? undefined : eq(auditLog.actorId, actor.id)))
       .orderBy(desc(auditLog.at))
       .limit(30);
-    return { ...row, fields, movements, people, activity, assignments, offices, prediction, attachments };
+    return { ...row, fields, movements, movementCount, people, activity, assignments, offices, prediction, attachments };
   });
   if (!data) notFound();
 
@@ -248,9 +253,10 @@ async function Content({ params }: Props) {
           <CardTitle icon={ArrowLeftRight}>Stock history</CardTitle>
         </CardHeader>
         <CardContent>
-          {data.movements.length === 0 ? (
+          {data.movementCount === 0 ? (
             <p className="text-muted-foreground text-sm">No movements yet.</p>
           ) : (
+            <>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -288,6 +294,8 @@ async function Content({ params }: Props) {
                 ))}
               </TableBody>
             </Table>
+            <TablePagination total={data.movementCount} page={page} pageSize={pageSize} />
+            </>
           )}
         </CardContent>
       </Card>
