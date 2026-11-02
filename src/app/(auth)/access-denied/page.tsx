@@ -8,7 +8,7 @@ export const metadata: Metadata = { title: "Access denied" };
 export default function AccessDeniedPage() {
   return (
     <div className="flex w-full items-center justify-center p-5">
-      <section className="auth-glass auth-rise w-full max-w-md rounded-3xl p-8 text-center">
+      <section className="auth-glass auth-rise w-full max-w-md text-center lg:rounded-3xl lg:p-8">
         <ShieldX className="mx-auto mb-3 size-8" aria-hidden />
         <h1 className="text-xl font-semibold">You can&apos;t sign in right now</h1>
         <p className="mt-2 mb-6 text-sm opacity-85">
