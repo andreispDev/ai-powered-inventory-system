@@ -35,10 +35,11 @@ import {
   SidebarRail,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
-import { SCALES, type Mode, type Scale } from "@/lib/appearance";
+import { SCALES, type Appearance, type Mode, type Scale } from "@/lib/appearance";
 import { signOut } from "@/lib/auth-client";
 import { THEMES } from "@/lib/theme-tokens";
 import type { Permission, Role } from "@/server/authz/catalog";
+import { PreferenceSync } from "@/modules/preferences/preference-sync";
 import { navFor } from "./nav";
 
 export type ShellUser = {
@@ -48,6 +49,7 @@ export type ShellUser = {
   role: Role;
   officeName: string | null;
   permissions: Permission[];
+  preferences: Record<string, unknown> | null;
 };
 
 const ROLE_LABEL: Record<Role, string> = { developer: "Developer", admin: "Admin", user: "User" };
@@ -88,7 +90,7 @@ function AppSidebar({ user }: { user: ShellUser }) {
                 {group.items.map((item) => (
                   <SidebarMenuItem key={item.label}>
                     {item.href ? (
-                      <SidebarMenuButton asChild tooltip={item.label} isActive={pathname === item.href}>
+                      <SidebarMenuButton asChild tooltip={item.label} isActive={pathname === item.href || pathname.startsWith(`${item.href}/`)}>
                         <Link href={item.href}>
                           <item.icon aria-hidden />
                           <span>{item.label}</span>
@@ -217,6 +219,7 @@ function UserMenu({ user }: { user: ShellUser }) {
 export function AppShell({ user, children }: { user: ShellUser; children: ReactNode }) {
   return (
     <SidebarProvider>
+      <PreferenceSync saved={user.preferences as Appearance | null} />
       <a
         href="#main"
         className="bg-background sr-only z-50 rounded-md border p-2 focus:not-sr-only focus:fixed focus:top-2 focus:left-2"

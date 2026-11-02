@@ -317,6 +317,8 @@ Full specification in [Design.md](Design.md).
 
 ## 7. Release plan
 
+**Status on 2026-11-02:** Phase 0 is done. Phase 1 is built and awaiting the pilot check. See "Not yet built" below.
+
 | Phase | Scope | Exit criteria |
 |---|---|---|
 | **0. Foundation** | Project setup, database, email code sign-in, office separation, permission engine, audit logging, app shell, themes, scaling, CI | Isolation test suite passes; security-header spike resolved |
@@ -325,6 +327,8 @@ Full specification in [Design.md](Design.md).
 | **3. Intelligence** | Forecasts, embeddings, AI assistant, AI usage controls and evaluations | Journeys E and F pass; AI quality targets met |
 | **4. Hardening and launch** | Load test, penetration test, restore rehearsal, accessibility audit, runbooks, rollout | All section 5 targets verified |
 | **5. Post-launch** | P1 and then P2 items | Driven by usage |
+
+**Not yet built, though listed as P0:** the permission grant screen (the engine and its rules exist, so grants have no UI yet), the command palette, breadcrumbs, the audit log screen (Phase 2), logging of Developer views, and phone card layouts for tables, which currently scroll sideways.
 
 ---
 

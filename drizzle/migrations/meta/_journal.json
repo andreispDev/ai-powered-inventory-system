@@ -22,6 +22,20 @@
       "when": 1793616450873,
       "tag": "0002_role_default",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1793618631297,
+      "tag": "0003_inventory",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793618632694,
+      "tag": "0004_inventory_security",
+      "breakpoints": true
     }
   ]
 }

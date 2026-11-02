@@ -19,11 +19,22 @@ export function PageContainer({
   return <div className={cn("mx-auto w-full space-y-6", WIDTHS[width])}>{children}</div>;
 }
 
-export function PageHeader({ title, description }: { title: string; description?: string }) {
+export function PageHeader({
+  title,
+  description,
+  actions,
+}: {
+  title: string;
+  description?: string;
+  actions?: ReactNode;
+}) {
   return (
-    <div>
-      <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
-      {description && <p className="text-muted-foreground mt-1 text-sm">{description}</p>}
+    <div className="flex flex-wrap items-start justify-between gap-3">
+      <div className="min-w-0">
+        <h1 className="text-2xl font-semibold tracking-tight break-words">{title}</h1>
+        {description && <p className="text-muted-foreground mt-1 text-sm">{description}</p>}
+      </div>
+      {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
     </div>
   );
 }
@@ -60,6 +71,21 @@ export function ShellSkeleton() {
         <PageSkeleton />
       </div>
     </div>
+  );
+}
+
+export function TableSkeleton({ width = "wide" }: { width?: keyof typeof WIDTHS }) {
+  return (
+    <PageContainer width={width}>
+      <div aria-busy="true" aria-label="Loading" className="space-y-6">
+        <Skeleton className="h-8 w-48" />
+        <div className="space-y-2 rounded-lg border p-3">
+          {Array.from({ length: 8 }, (_, i) => (
+            <Skeleton key={i} className="h-8 w-full" />
+          ))}
+        </div>
+      </div>
+    </PageContainer>
   );
 }
 

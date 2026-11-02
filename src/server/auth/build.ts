@@ -6,7 +6,7 @@ import { eq, sql } from "drizzle-orm";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import * as schema from "../db/schema";
 import { account, appUser, auditLog, session, verification } from "../db/schema";
-import { canRequestCode, canStartSession, normalizeEmail } from "./sign-in-rules";
+import { canStartSession, normalizeEmail } from "./sign-in-rules";
 
 const SEND_PATH = "/email-otp/send-verification-otp";
 const SIGN_IN_PATH = "/sign-in/email-otp";
@@ -16,10 +16,12 @@ export type AuthDeps = {
   secret: string;
   baseURL: string;
   sendCode: (email: string, code: string) => Promise<void>;
+  /** Limits codes per email, whichever IP address asks */
+  allowCodeRequest: (email: string) => Promise<boolean>;
 };
 
 /** Sign-in is by emailed one-time code, and only for accounts that were created in advance. */
-export function buildAuth({ db, secret, baseURL, sendCode }: AuthDeps) {
+export function buildAuth({ db, secret, baseURL, sendCode, allowCodeRequest }: AuthDeps) {
   const log = (action: string, email: string | undefined, reason?: string) =>
     db.insert(auditLog).values({
       action,
@@ -71,7 +73,7 @@ export function buildAuth({ db, secret, baseURL, sendCode }: AuthDeps) {
         if (ctx.body?.type !== "sign-in") {
           throw new APIError("FORBIDDEN", { message: "Not available." });
         }
-        if (!canRequestCode(email)) {
+        if (!(await allowCodeRequest(normalizeEmail(email)))) {
           await log("auth.code_limit_reached", normalizeEmail(email));
           throw new APIError("TOO_MANY_REQUESTS", { message: "Too many codes requested. Try again later." });
         }

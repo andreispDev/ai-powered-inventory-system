@@ -2,8 +2,7 @@ import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import { AppShell } from "@/components/shell/app-shell";
-import { PageSkeleton } from "@/components/shell/page";
-import { DashboardView } from "@/modules/dashboards/dashboard-view";
+import { PageContainer, PageHeader, PageSkeleton } from "@/components/shell/page";
 import { effectivePermissions, type Role } from "@/server/authz/catalog";
 
 // Development only: shows the shell per role with sample names and no real data or session.
@@ -16,14 +15,11 @@ async function Preview({ searchParams }: { searchParams: Promise<{ role?: string
 
   return (
     <AppShell
-      user={{ name: `Sample ${role}`, email: `${role}@example.test`, image: null, role, officeName, permissions }}
+      user={{ name: `Sample ${role}`, email: `${role}@example.test`, image: null, role, officeName, permissions, preferences: null }}
     >
-      <DashboardView
-        name={`Sample ${role}`}
-        role={role}
-        officeName={officeName}
-        permissionCount={permissions.length}
-      />
+      <PageContainer>
+        <PageHeader title={`Sample ${role}`} description="Preview of the navigation for this role." />
+      </PageContainer>
     </AppShell>
   );
 }

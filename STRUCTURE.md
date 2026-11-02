@@ -98,7 +98,7 @@ src/app/
 │  ├─ announcements/                  Admin: own office
 │  │  ├─ page.tsx
 │  │  └─ new/page.tsx
-│  ├─ team/                           Admin: office users
+│  ├─ accounts/                       Developers see all offices, admins their own
 │  │  ├─ page.tsx
 │  │  ├─ new/page.tsx
 │  │  └─ [userId]/page.tsx
@@ -115,9 +115,6 @@ src/app/
 │  │  ├─ page.tsx
 │  │  ├─ new/page.tsx
 │  │  └─ [officeId]/page.tsx          Profile, admins, read-only inventory
-│  ├─ accounts/
-│  │  ├─ page.tsx
-│  │  └─ [userId]/page.tsx            Profile and effective permissions
 │  ├─ permissions/
 │  │  ├─ page.tsx                     Grants
 │  │  └─ requests/page.tsx
@@ -163,7 +160,7 @@ src/modules/inventory/
 |---|---|---|
 | `auth` | Sign-in rules, sessions, session list | AUTH |
 | `offices` | Office profiles | ORG |
-| `users` | Accounts, profiles, invitations | ORG |
+| `accounts` | Accounts, profiles, invitations | ORG |
 | `permissions` | Catalog UI, grants, requests, effective access view | PERM |
 | `categories` | Categories, columns, field-schema builder | CAT |
 | `inventory` | Items, stock ledger, import, export | INV |
@@ -332,7 +329,7 @@ Validated by `server/env.ts` at boot, so a bad deploy fails immediately. `.env.e
 |---|---|
 | `DATABASE_ADMIN_URL` | Superuser, used only by `db:setup` and `bootstrap:developer` |
 | `DATABASE_URL`, `DATABASE_AUTH_URL` | Restricted app role, and the sign-in role that reads accounts before a scope exists. `db:setup` generates both |
-| `REDIS_URL` | Limits, queues, event streams, cache |
+| `REDIS_URL` | Limits, queues, event streams, cache. Locally: `docker compose -f docker/compose.dev.yml up -d` |
 | `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` | Sessions |
 | `SMTP_USER`, `SMTP_APP_PASSWORD` | Gmail account that sends sign-in codes. Required in production |
 | `BOOTSTRAP_DEVELOPER_EMAIL` | First Developer (used by the CLI only) |

@@ -35,9 +35,9 @@ const NAV: NavGroup[] = [
     label: "Main",
     items: [
       { label: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
-      { label: "Offices", icon: Building2, permission: "office.manage" },
-      { label: "Inventory", icon: Boxes, permission: "item.read" },
-      { label: "Categories", icon: FolderTree, permission: "category.read" },
+      { label: "Offices", icon: Building2, href: "/console/offices", permission: "office.manage" },
+      { label: "Inventory", icon: Boxes, href: "/inventory", permission: "item.read" },
+      { label: "Categories", icon: FolderTree, href: "/categories", permission: "category.read" },
       { label: "Transfers", icon: ArrowLeftRight, permission: "transfer.create" },
       { label: "Assignments", icon: UserCheck, permission: "assignment.manage" },
     ],
@@ -52,7 +52,7 @@ const NAV: NavGroup[] = [
   {
     label: "Oversight",
     items: [
-      { label: "Accounts", icon: Users, permission: "user.read" },
+      { label: "Accounts", icon: Users, href: "/accounts", permission: "user.read" },
       { label: "Permissions", icon: KeyRound, permission: "permission.grant" },
       { label: "Live monitor", icon: Activity, permission: "monitor.office" },
       { label: "Live monitor", icon: Activity, permission: "monitor.all" },

@@ -19,6 +19,7 @@ export type Actor = {
   officeId: string | null;
   officeName: string | null;
   permissions: Permission[];
+  preferences: Record<string, unknown> | null;
 };
 
 /** Loaded fresh on every request, so revoked access ends immediately. Memoized within one render. */
@@ -55,6 +56,7 @@ export const getActor = cache(async (): Promise<Actor | null> => {
     officeId: user.officeId,
     officeName: row.officeName,
     permissions: effectivePermissions(user.role, grants),
+    preferences: user.preferences,
   };
 });
 

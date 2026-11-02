@@ -4,7 +4,7 @@ import { drizzle } from "drizzle-orm/pglite";
 import { migrate } from "drizzle-orm/pglite/migrator";
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { buildAuth } from "@/server/auth/build";
-import { canRequestCode } from "@/server/auth/sign-in-rules";
+import { memoryLimit } from "@/server/rate-limit/limits";
 import * as schema from "@/server/db/schema";
 import { appUser, auditLog, office, session, verification } from "@/server/db/schema";
 
@@ -46,6 +46,7 @@ beforeAll(async () => {
     secret: "test-secret-test-secret-test-secret-1234",
     baseURL: "http://localhost:3000",
     sendCode: async (email, code) => void sent.set(email, code),
+    allowCodeRequest: async (email) => memoryLimit("signInCode", email).ok,
   });
 });
 
@@ -104,12 +105,19 @@ describe("email code sign-in", () => {
   });
 });
 
-describe("code request limit", () => {
-  it("allows 5 per email in 15 minutes, for any spelling of the address", () => {
+describe("request limits", () => {
+  it("allows 5 codes per email in 15 minutes", () => {
     const start = 1_000_000;
-    for (let i = 0; i < 5; i++) expect(canRequestCode("Limit@Example.test", start + i)).toBe(true);
-    expect(canRequestCode(" limit@example.test ", start + 10)).toBe(false);
-    expect(canRequestCode("other@example.test", start + 10)).toBe(true);
-    expect(canRequestCode("limit@example.test", start + 16 * 60 * 1000)).toBe(true);
+    const ask = (key: string, at: number) => memoryLimit("signInCode", key, at).ok;
+    for (let i = 0; i < 5; i++) expect(ask("limit@example.test", start + i)).toBe(true);
+    expect(ask("limit@example.test", start + 10)).toBe(false);
+    expect(ask("other@example.test", start + 10)).toBe(true);
+    expect(ask("limit@example.test", start + 16 * 60 * 1000)).toBe(true);
+  });
+
+  it("says how long to wait", () => {
+    const start = 2_000_000;
+    for (let i = 0; i < 60; i++) memoryLimit("write", "busy", start);
+    expect(memoryLimit("write", "busy", start + 15_000)).toEqual({ ok: false, retryAfterSeconds: 45 });
   });
 });

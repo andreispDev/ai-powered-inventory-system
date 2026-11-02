@@ -1,5 +1,6 @@
 import "server-only";
 import { getAuthDb } from "../db/client";
+import { checkLimit } from "../rate-limit";
 import { env } from "../env";
 import { buildAuth } from "./build";
 import { sendSignInCode } from "./mailer";
@@ -11,6 +12,7 @@ function createAuth() {
     secret: BETTER_AUTH_SECRET,
     baseURL: BETTER_AUTH_URL,
     sendCode: sendSignInCode,
+    allowCodeRequest: async (email) => (await checkLimit("signInCode", email)).ok,
   });
 }
 

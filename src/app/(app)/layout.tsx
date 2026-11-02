@@ -14,6 +14,7 @@ async function AuthenticatedShell({ children }: { children: ReactNode }) {
         role: actor.role,
         officeName: actor.officeName,
         permissions: actor.permissions,
+        preferences: actor.preferences,
       }}
     >
       {children}

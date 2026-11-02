@@ -1,0 +1,15 @@
+name: inventory-dev
+
+services:
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    # Local machine only: Redis has no password here.
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - redis-data:/data
+
+volumes:
+  redis-data:

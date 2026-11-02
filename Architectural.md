@@ -51,7 +51,7 @@ flowchart TB
 | Embeddings | Local Ollama with `nomic-embed-text` (768 dimensions), behind an `Embedder` interface | Same server. Changing the model means re-embedding existing records |
 | Validation | Zod | Same schemas for forms, actions, env and AI tools |
 | Client data | Server Components by default; TanStack Query only for polling and real-time widgets | Less client code |
-| Tables | TanStack Table (headless) + shadcn | Full control of the UI |
+| Tables | shadcn table with state in the URL | Sorting, filtering and paging all run on the server, so a table library isn't needed yet |
 | Hosting | The current PC for development. Final always-on machine not chosen yet (Docker containers are the likely packaging) | A worker, long-lived SSE connections and Ollama need long-running processes on a machine we control. Vercel is not used |
 | Database admin | pgAdmin 4 | The tool already in use for PostgreSQL |
 | Observability | OpenTelemetry, pino, Prometheus/Grafana/Loki, Sentry (or self-hosted GlitchTip) | Open standards |
@@ -297,10 +297,10 @@ The algorithm is a sliding window, in an atomic Redis script. Starting limits, t
 
 | Class | Limit | Key | If Redis is down |
 |---|---|---|---|
-| Sign-in attempts | 10 / min | IP | Fail closed |
-| Reads | 300 / min | user | Fail open |
+| Sign-in codes | 3 / min per IP (auth library), 5 / 15 min per email | IP, email | Per-instance memory limit, so a Redis outage can't lock everyone out |
+| Reads | 300 / min | user | Per-instance memory limit |
 | Writes | 60 / min | user | Per-instance memory limit |
-| Bulk, import, export | 5 / min | user | Fail closed |
+| Bulk, import, export | 5 / min | user | Per-instance memory limit |
 | AI chat | 5 / min and a daily token budget, plus a shared queue running 1 request at a time on the current PC | user | Fail closed |
 | Announcements | 10 / hour | user | Fail closed |
 | SSE connections | 5 concurrent | user | Per-instance memory limit |
@@ -464,7 +464,7 @@ flowchart TB
 | **Logs** | Redact tokens and personal data from system logs. Audit logs store only what is required |
 | **Testing** | Isolation tests, security review on privileged code, and an external penetration test before launch |
 
-**Open item: CSP versus static shells.** The Next.js docs state that nonce-based CSP requires dynamic rendering. That conflicts with the prerendered shell from Cache Components, and it also affects our pre-paint theme script. Phase 0 includes a spike: test nonces with the current config, measure the navigation cost, and choose. The default is security first: nonce CSP, accepting a slower first paint, which is a reasonable trade for an internal app.
+**Decision: CSP without nonces.** The Next.js docs state that nonce-based CSP is incompatible with the prerendered shell from Cache Components. We keep the shell and use the documented alternative: `script-src 'self' 'unsafe-inline'`, plus `object-src 'none'`, `base-uri 'self'`, `form-action 'self'` and `frame-ancestors 'none'`. The trade-off is that CSP won't stop an injected inline script, so XSS protection rests on React's escaping and on allowing no user or AI content into raw HTML. If a security review requires strict CSP, the options are experimental SRI or turning off Cache Components.
 
 ---
 
@@ -539,6 +539,6 @@ CI runs lint → type check → unit → integration → isolation → build →
 | Service | Status on the current PC | Needed |
 |---|---|---|
 | Ollama | Running, version 0.40.13, both models installed | Nothing |
-| PostgreSQL + pgAdmin 4 | In use per product owner; version not checked | Create the database, confirm version 16+, and install the `pgvector` extension |
-| Redis | Not checked | Run it through Docker or WSL, as Redis has no official native Windows build |
+| PostgreSQL + pgAdmin 4 | Version 18, database `inventory` set up | Install the `pgvector` extension before Phase 3 |
+| Redis | Running in Docker (`docker/compose.dev.yml`), local machine only | Docker Desktop must be running. If it isn't, limits fall back to per-instance counts |
 | Sign-in email | Not set up | Add a Gmail App Password to send real codes. Until then, codes print in the server terminal |
