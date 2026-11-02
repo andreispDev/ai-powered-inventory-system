@@ -253,7 +253,7 @@ Each dashboard loads section by section, so one slow or failed section does not 
 | ID | Requirement | Priority |
 |---|---|---|
 | RAG-1 | A chat panel available from anywhere answers questions from the app's data, with responses that appear as they are written | P0 |
-| RAG-2 | It handles exact questions ("how many laptops were issued last month?") and fuzzy ones ("anything like the old projectors?"). Fuzzy matching is keyword-based until pgvector is installed | P0 |
+| RAG-2 | It handles exact questions ("how many laptops were issued last month?") and fuzzy ones ("anything like the old projectors?") | P0 |
 | RAG-3 | Answers link to the source records. If the data doesn't contain the answer, it says so | P0 |
 | RAG-4 | It sees only what the person asking may see: same office and permission rules. Asking it to ignore its rules gives no extra access | P0 |
 | RAG-5 | It can read only. Text stored in inventory fields is treated as data, never as instructions | P0 |

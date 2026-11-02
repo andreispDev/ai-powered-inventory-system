@@ -4,7 +4,7 @@ import { asc, isNull, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import Redis from "ioredis";
 import { Pool } from "pg";
-import { createOllama } from "../server/ai/ollama";
+import { createEmbedder, createOllama, OllamaError } from "../server/ai/ollama";
 import * as schema from "../server/db/schema";
 import { jobRun, outbox } from "../server/db/schema";
 import { runScoped, type ScopedTx } from "../server/db/scope";
@@ -16,6 +16,7 @@ import {
   scanReminders,
   verifyAudit,
 } from "./events";
+import { refreshEmbeddings } from "./embeddings";
 import { draftForecasts, explainForecasts, saveForecasts } from "./forecasts";
 
 const required = (name: string) => {
@@ -121,6 +122,15 @@ const HANDLERS: Record<string, () => Promise<void>> = {
     await explainForecasts(drafts, createOllama());
     await alertPeople([...new Set(await asWorker((tx) => saveForecasts(tx, drafts)))]);
   },
+  [JOBS.embeddings]: async () => {
+    try {
+      await refreshEmbeddings(asWorker, createEmbedder());
+    } catch (error) {
+      // With the AI off, search falls back to keywords and the next run catches up.
+      if (!(error instanceof OllamaError)) throw error;
+      console.error("Embeddings waiting for Ollama:", error.message);
+    }
+  },
   [JOBS.auditCheckpoint]: async () => {
     await asWorker(checkpointAudit);
   },
@@ -162,6 +172,8 @@ async function main() {
   await queue.upsertJobScheduler("forecast", { pattern: "0 1 * * *" }, { name: JOBS.forecast, opts: defaults });
   await queue.add(JOBS.auditCheckpoint, {}, defaults);
   await queue.add(JOBS.forecast, {}, defaults);
+  await queue.upsertJobScheduler("embeddings", { every: 300_000 }, { name: JOBS.embeddings, opts: defaults });
+  await queue.add(JOBS.embeddings, {}, defaults);
 
   const heartbeat = () => redis.set(WORKER_HEARTBEAT_KEY, new Date().toISOString(), "EX", 60).catch(() => {});
   void heartbeat();

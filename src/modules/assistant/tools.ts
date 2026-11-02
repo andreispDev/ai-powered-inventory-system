@@ -1,13 +1,14 @@
 // What the assistant can look up. Read-only, and every call runs in the asking person's RLS scope.
-import { and, asc, count, desc, eq, gte, ilike, isNull, or, sql, sum, type SQL } from "drizzle-orm";
+import { and, asc, cosineDistance, count, desc, eq, gte, ilike, inArray, isNull, lte, or, sql, sum, type SQL } from "drizzle-orm";
 import { z } from "zod";
 import type { Permission } from "../../server/authz/catalog";
 import { itemPath } from "../inventory/kinds";
-import { appUser, assignment, category, categoryField, forecast, item, office, stockMovement } from "../../server/db/schema";
+import { appUser, assignment, category, categoryField, forecast, item, itemEmbedding, office, stockMovement } from "../../server/db/schema";
 import type { ScopedTx } from "../../server/db/scope";
 
 export type Source = { label: string; href: string };
-export type ToolContext = { tx: ScopedTx; permissions: readonly Permission[]; now: Date };
+/** queryVector is the search text's meaning, worked out before the transaction. Without it, search uses keywords alone. */
+export type ToolContext = { tx: ScopedTx; permissions: readonly Permission[]; now: Date; queryVector?: number[] | null };
 /** empty means the records hold nothing for this question, so the model has nothing to answer from. */
 export type ToolResult = { data: unknown; sources: Source[]; empty?: boolean };
 
@@ -37,10 +38,6 @@ export function searchWords(query: string): string[] {
 
 const contains = (word: string) => `%${word.replace(/[\\%_]/g, "\\$&")}%`;
 
-/**
- * Keyword retrieval. Meaning-based search can join it here once pgvector is installed:
- * callers only depend on this function.
- */
 function matches(query: string, every = true): SQL | undefined {
   const columns = [item.name, item.sku, item.notes, item.supplier, item.location, category.name];
   const words = searchWords(query).map((word) => or(...columns.map((column) => ilike(column, contains(word)))));
@@ -68,6 +65,25 @@ const itemRows = (tx: ScopedTx, where: SQL | undefined, limit = MAX_ROWS) =>
     .orderBy(asc(item.name))
     .limit(limit);
 
+// How far apart a match may be, by cosine distance. In a small test with nomic-embed-text, right
+// matches were within 0.38 and unrelated questions beyond 0.49. Changing the model means re-measuring.
+export const MAX_DISTANCE = 0.4;
+const RRF_K = 60;
+
+/** Items closest in meaning. RLS keeps this to what the person may see. */
+const similarItemIds = async (tx: ScopedTx, queryVector: number[]) => {
+  const distance = cosineDistance(itemEmbedding.embedding, queryVector);
+  const rows = await tx.select({ id: itemEmbedding.itemId }).from(itemEmbedding).where(lte(distance, MAX_DISTANCE)).orderBy(distance).limit(MAX_ROWS);
+  return rows.map((row) => row.id);
+};
+
+/** Reciprocal rank fusion: being near the top of either list counts, and of both counts most. */
+export function mergeRanked(lists: readonly (readonly string[])[], limit = MAX_ROWS) {
+  const scores = new Map<string, number>();
+  for (const list of lists) list.forEach((id, rank) => scores.set(id, (scores.get(id) ?? 0) + 1 / (RRF_K + rank + 1)));
+  return [...scores.entries()].sort((a, b) => b[1] - a[1]).slice(0, limit).map(([id]) => id);
+}
+
 const itemSource = (row: { id: string; name: string; kind?: "stock" | "records" }): Source => ({ label: row.name, href: itemPath(row.kind ?? "stock", row.id) });
 const withoutId = <T extends { id: string }>(row: T): Omit<T, "id"> => {
   const { id, ...rest } = row;
@@ -84,14 +100,18 @@ const describeItem = <T extends { id: string; kind: "stock" | "records"; quantit
 export const TOOLS: Tool[] = [
   define({
     name: "search_items",
-    description: "Find stock items and records (such as work papers) by words in their name, reference, notes, supplier, location or category.",
+    description: "Find stock items and records (such as work papers) by name, reference, notes, supplier, location, category or meaning. Handles fuzzy questions like 'anything like the old projectors'.",
     permission: "item.read",
     input: z.object({ query: z.string().trim().min(1).max(200) }),
-    async run({ tx }, { query }) {
+    async run({ tx, queryVector }, { query }) {
       const where = matches(query);
       const exact = where ? await itemRows(tx, where) : [];
       // Records matching every word first. Failing that, any word, and the model is told they're only close.
-      const rows = exact.length > 0 || !where ? exact : await itemRows(tx, matches(query, false));
+      const keyword = exact.length > 0 || !where ? exact : await itemRows(tx, matches(query, false));
+      const similar = queryVector ? await similarItemIds(tx, queryVector) : [];
+      const order = mergeRanked([keyword.map((row) => row.id), similar]);
+      const found = order.length > 0 ? await itemRows(tx, inArray(item.id, order)) : [];
+      const rows = found.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
       return {
         data: { found: rows.length, closeMatchesOnly: exact.length === 0 && rows.length > 0, items: rows.map(describeItem) },
         sources: rows.map(itemSource),

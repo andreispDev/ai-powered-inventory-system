@@ -1,4 +1,5 @@
 import { PGlite } from "@electric-sql/pglite";
+import { vector } from "@electric-sql/pglite-pgvector";
 import { eq, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/pglite";
 import { migrate } from "drizzle-orm/pglite/migrator";
@@ -36,7 +37,7 @@ const failure = (promise: Promise<unknown>) =>
   );
 
 beforeAll(async () => {
-  client = new PGlite();
+  client = new PGlite({ extensions: { vector } });
   db = drizzle(client, { schema });
   await migrate(db, { migrationsFolder: "./drizzle/migrations" });
 

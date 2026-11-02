@@ -1,4 +1,5 @@
 import { PGlite } from "@electric-sql/pglite";
+import { vector } from "@electric-sql/pglite-pgvector";
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/pglite";
 import { migrate } from "drizzle-orm/pglite/migrator";
@@ -29,7 +30,7 @@ async function auditRows(action: string) {
 const wrongCode = (code: string) => (code === "000000" ? "111111" : "000000");
 
 beforeAll(async () => {
-  client = new PGlite();
+  client = new PGlite({ extensions: { vector } });
   db = drizzle(client, { schema });
   await migrate(db, { migrationsFolder: "./drizzle/migrations" });
   await db.insert(office).values({ id: OFFICE, code: "A", name: "Office A" });

@@ -1,16 +1,18 @@
 import { PGlite } from "@electric-sql/pglite";
+import { vector } from "@electric-sql/pglite-pgvector";
 import { eq, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/pglite";
 import { migrate } from "drizzle-orm/pglite/migrator";
 import { beforeAll, describe, expect, it } from "vitest";
 import { answerQuestion, CHECK_NUMBERS, NOT_FOUND, pickSources, toolCallInText, unsupportedNumbers } from "@/modules/assistant/agent";
-import { runTool, searchWords, toolSchemas, toolsFor, TOOLS } from "@/modules/assistant/tools";
+import { MAX_DISTANCE, mergeRanked, runTool, searchWords, toolSchemas, toolsFor, TOOLS } from "@/modules/assistant/tools";
 import { waitForTurn } from "@/modules/assistant/turns";
 import type { ChatChunk, ChatMessage } from "@/server/ai/ollama";
 import type { Permission } from "@/server/authz/catalog";
 import * as schema from "@/server/db/schema";
 import { aiConversation, aiMessage, appUser, category, item, office, stockMovement } from "@/server/db/schema";
 import { runScoped, type Scope, type ScopedTx } from "@/server/db/scope";
+import { embeddingText, findStaleItems, refreshEmbeddings } from "@/worker/embeddings";
 
 const id = (suffix: string) => `00000000-0000-4000-8000-${suffix.padStart(12, "0")}`;
 const [A, B, ADMIN_A, ADMIN_B, DEV, CAT_A, CAT_B, LAPTOP, SECRET, POISON] = [id("a"), id("b"), id("a1"), id("b1"), id("d1"), id("ca"), id("cb"), id("e1"), id("e2"), id("e3")];
@@ -30,7 +32,7 @@ const asApp = <T>(scope: Scope, fn: (tx: ScopedTx) => Promise<T>): Promise<T> =>
 const tool = (scope: Scope, name: string, args: unknown, permissions = EVERYTHING) => asApp(scope, (tx) => runTool({ tx, permissions, now }, name, args));
 
 beforeAll(async () => {
-  db = drizzle(new PGlite(), { schema });
+  db = drizzle(new PGlite({ extensions: { vector } }), { schema });
   await migrate(db, { migrationsFolder: "./drizzle/migrations" });
   await db.insert(office).values([
     { id: A, code: "A", name: "Office A" },
@@ -240,6 +242,7 @@ describe("assistant answers", () => {
     ];
     expect(pickSources(sources, "The dell is here")).toEqual([sources[0]]);
     expect(pickSources(sources, "Nothing named")).toHaveLength(2);
+    expect(pickSources(sources, "I couldn't find the price of bitcoin.")).toEqual([]);
   });
 });
 
@@ -268,5 +271,75 @@ describe("assistant turns", () => {
     first();
     const next = await waitForTurn(() => {});
     next();
+  });
+});
+
+describe("meaning search", () => {
+  // A direction in 768 dimensions. Closeness between these is what the search measures.
+  const direction = (axis: number) => Array.from({ length: 768 }, (_, index) => (index === axis ? 1 : 0));
+  const nearly = (axis: number) => Array.from({ length: 768 }, (_, index) => (index === axis ? 1 : index === axis + 1 ? 0.1 : 0));
+  const asWorker = <T>(fn: (tx: ScopedTx) => Promise<T>) =>
+    asApp({ kind: "platform", userId: id("0") }, async (tx) => {
+      await tx.execute(sql`select set_config('app.worker', 'on', true)`);
+      return fn(tx);
+    });
+  const axisFor = (text: string) => (/projector/i.test(text) ? 1 : /secret/i.test(text) ? 3 : /laptop/i.test(text) ? 2 : 4);
+  const embedder = {
+    embedDocuments: async (texts: readonly string[]) => texts.map((text) => direction(axisFor(text))),
+    embedQuery: async () => direction(0),
+  };
+  const BEAMER = id("e8");
+
+  beforeAll(async () => {
+    await db.insert(item).values({ id: BEAMER, officeId: A, categoryId: CAT_A, name: "Epson beamer", notes: "old projector unit" });
+    await refreshEmbeddings(asWorker, embedder);
+  });
+
+  it("embeds every item once, and again only when it changes", async () => {
+    expect(await asWorker((tx) => findStaleItems(tx))).toEqual([]);
+    let calls = 0;
+    const counting = { ...embedder, embedDocuments: async (texts: readonly string[]) => (calls++, embedder.embedDocuments(texts)) };
+    await refreshEmbeddings(asWorker, counting);
+    expect(calls).toBe(0);
+    await db.update(item).set({ notes: "old projector unit, repaired" }).where(eq(item.id, BEAMER));
+    expect((await asWorker((tx) => findStaleItems(tx))).map((row) => row.itemId)).toEqual([BEAMER]);
+    await refreshEmbeddings(asWorker, counting);
+    expect(calls).toBe(1);
+  });
+
+  it("finds an item with no matching words, by meaning", async () => {
+    const result = await tool(scopeA, "search_items", { query: "visual display gear" });
+    expect(result.empty).toBe(true);
+    const vectorRows = await asApp(scopeA, (tx) => runTool({ tx, permissions: EVERYTHING, now, queryVector: nearly(1) }, "search_items", { query: "visual display gear" }));
+    expect(vectorRows).toMatchObject({ empty: false, data: { items: [{ name: "Epson beamer" }] } });
+  });
+
+  it("never finds another office's items, however close", async () => {
+    const result = await asApp(scopeA, (tx) => runTool({ tx, permissions: EVERYTHING, now, queryVector: direction(3) }, "search_items", { query: "zzz" }));
+    expect(JSON.stringify(result.data)).not.toContain("Secret");
+    const platformResult = await asApp(platform, (tx) => runTool({ tx, permissions: EVERYTHING, now, queryVector: direction(3) }, "search_items", { query: "zzz" }));
+    expect(JSON.stringify(platformResult.data)).toContain("Secret");
+  });
+
+  it("ignores anything too far away", async () => {
+    expect(MAX_DISTANCE).toBeLessThan(1);
+    const result = await asApp(scopeA, (tx) => runTool({ tx, permissions: EVERYTHING, now, queryVector: direction(50) }, "search_items", { query: "zzz" }));
+    expect(result.empty).toBe(true);
+  });
+
+  it("can't be written by people, and is hidden from other offices", async () => {
+    const row = { itemId: LAPTOP, officeId: A, contentHash: "x", embedding: direction(9) };
+    await expect(asApp(scopeA, (tx) => tx.insert(schema.itemEmbedding).values(row).onConflictDoUpdate({ target: schema.itemEmbedding.itemId, set: { contentHash: "x" } }))).rejects.toThrow();
+    await asApp(scopeB, async (tx) => expect(await tx.select().from(schema.itemEmbedding).where(eq(schema.itemEmbedding.officeId, A))).toEqual([]));
+  });
+
+  it("ranks items high in both lists first", () => {
+    expect(mergeRanked([["a", "b"], ["b", "c"]])[0]).toBe("b");
+    expect(mergeRanked([[], ["c"]])).toEqual(["c"]);
+  });
+
+  it("describes items by their text, without IDs", () => {
+    const text = embeddingText({ name: "Epson", sku: null, notes: "old", supplier: null, location: null, condition: null, categoryName: "AV", attributes: { owner: "00000000-0000-4000-8000-000000000001", tags: ["hdmi", "wall"], size: 3, on: true } });
+    expect(text).toBe("Epson. AV. old. hdmi. wall. 3");
   });
 });

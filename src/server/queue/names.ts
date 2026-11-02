@@ -6,6 +6,7 @@ export const JOBS = {
   auditCheckpoint: "audit.checkpoint",
   auditVerify: "audit.verify",
   forecast: "forecast.refresh",
+  embeddings: "embeddings.refresh",
 } as const;
 
 export const WORKER_HEARTBEAT_KEY = "worker:heartbeat";

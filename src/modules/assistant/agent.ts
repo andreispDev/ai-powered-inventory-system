@@ -48,6 +48,8 @@ export function toolCallInText(content: string, toolNames: readonly string[]): T
 
 /** Records the answer names first, then the rest, so the links are the ones that matter. */
 export function pickSources(sources: readonly Source[], answer: string): Source[] {
+  // Links under "I couldn't find that" would suggest the opposite.
+  if (/\b(couldn'?t|could not|can'?t|cannot|unable to) find\b/i.test(answer)) return [];
   const unique = [...new Map(sources.map((source) => [source.href, source])).values()];
   const lower = answer.toLowerCase();
   const named = unique.filter((source) => lower.includes(source.label.toLowerCase()));

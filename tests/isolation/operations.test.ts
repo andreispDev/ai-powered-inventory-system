@@ -1,4 +1,5 @@
 import { PGlite } from "@electric-sql/pglite";
+import { vector } from "@electric-sql/pglite-pgvector";
 import { and, eq, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/pglite";
 import { migrate } from "drizzle-orm/pglite/migrator";
@@ -86,7 +87,7 @@ const complete = (scope: Scope, transferId: string, categoryId = CAT_B, actor = 
   asApp(scope, (tx) => tx.execute(sql`select complete_transfer(${transferId}::uuid, ${categoryId}::uuid, ${actor}::uuid, 'Bea')`));
 
 beforeAll(async () => {
-  client = new PGlite();
+  client = new PGlite({ extensions: { vector } });
   db = drizzle(client, { schema });
   await migrate(db, { migrationsFolder: "./drizzle/migrations" });
   await db.insert(office).values([

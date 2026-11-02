@@ -19,6 +19,7 @@ import {
   unique,
   uniqueIndex,
   uuid,
+  vector,
 } from "drizzle-orm/pg-core";
 
 const timestamps = {
@@ -310,6 +311,21 @@ export const itemAttachment = pgTable(
     index("item_attachment_item_idx").on(t.itemId, t.createdAt.desc()),
     foreignKey({ columns: [t.officeId, t.itemId], foreignColumns: [item.officeId, item.id] }),
   ],
+);
+
+/** One vector per item, for meaning-based search. Written only by the background worker. */
+export const itemEmbedding = pgTable(
+  "item_embedding",
+  {
+    itemId: uuid("item_id").primaryKey(),
+    officeId: uuid("office_id").notNull(),
+    contentHash: text("content_hash").notNull(),
+    embedding: vector("embedding", { dimensions: 768 }).notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  // No vector index yet: an exact scan of one office's rows is fast at this size, and an index
+  // would need tuning so that row-level security doesn't filter away its nearest matches.
+  (t) => [index("item_embedding_office_idx").on(t.officeId), foreignKey({ columns: [t.officeId, t.itemId], foreignColumns: [item.officeId, item.id] })],
 );
 
 export const stockMovement = pgTable(

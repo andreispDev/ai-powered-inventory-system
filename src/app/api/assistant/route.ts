@@ -3,7 +3,7 @@ import { z } from "zod";
 import { answerQuestion, type AgentEvent } from "@/modules/assistant/agent";
 import { waitForTurn } from "@/modules/assistant/turns";
 import { runTool, toolSchemas, toolsFor, type Source } from "@/modules/assistant/tools";
-import { createOllamaChat, OllamaError } from "@/server/ai/ollama";
+import { createEmbedder, createOllamaChat, OllamaError } from "@/server/ai/ollama";
 import { writeAudit } from "@/server/audit/writer";
 import { actorFromHeaders } from "@/server/auth/session";
 import { aiConversation, aiMessage } from "@/server/db/schema";
@@ -114,7 +114,12 @@ export async function POST(request: Request) {
           tools: toolSchemas(tools),
           toolNames: tools.map((tool) => tool.name),
           // A transaction per tool, never held open while the model is thinking.
-          runTool: (name, args) => readScoped(actor, (tx) => runTool({ tx, permissions: actor.permissions, now: new Date() }, name, args)),
+          runTool: async (name, args) => {
+            const query = name === "search_items" ? (args as { query?: unknown } | null)?.query : null;
+            // Worked out first, and if it fails the search still runs on keywords.
+            const queryVector = typeof query === "string" && query.trim() ? await createEmbedder().embedQuery(query).catch(() => null) : null;
+            return readScoped(actor, (tx) => runTool({ tx, permissions: actor.permissions, now: new Date(), queryVector }, name, args));
+          },
           emit: send,
           signal: request.signal,
           today: now.toISOString().slice(0, 10),

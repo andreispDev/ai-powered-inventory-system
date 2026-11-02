@@ -78,3 +78,30 @@ export function createOllamaChat(
     },
   };
 }
+
+export const EMBEDDING_MODEL = process.env.OLLAMA_EMBEDDING_MODEL ?? "nomic-embed-text";
+
+export type Embedder = { embedDocuments: (texts: readonly string[]) => Promise<number[][]>; embedQuery: (text: string) => Promise<number[]> };
+
+/** nomic-embed-text expects these prefixes, and matches better with them. */
+export function createEmbedder(url = process.env.OLLAMA_URL ?? "http://127.0.0.1:11434", model = EMBEDDING_MODEL): Embedder {
+  const embed = async (input: string[]) => {
+    let response: Response;
+    try {
+      response = await fetch(`${url}/api/embed`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ model, input }),
+        signal: AbortSignal.timeout(60_000),
+      });
+    } catch (error) {
+      throw new OllamaError(String(error));
+    }
+    if (!response.ok) throw new OllamaError(`Ollama responded ${response.status}`);
+    return ((await response.json()) as { embeddings: number[][] }).embeddings;
+  };
+  return {
+    embedDocuments: (texts) => embed(texts.map((text) => `search_document: ${text}`)),
+    embedQuery: async (text) => (await embed([`search_query: ${text}`]))[0],
+  };
+}
