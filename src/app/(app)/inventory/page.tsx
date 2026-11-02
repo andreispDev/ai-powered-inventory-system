@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { z } from "zod";
 import { TableFilter, TablePagination, TableSearch } from "@/components/data-table/pagination";
+import { ExportMenu } from "@/components/data-table/export-menu";
 import { AccessDenied } from "@/components/feedback/access-denied";
 import { EmptyState, PageContainer, PageHeader, TableSkeleton } from "@/components/shell/page";
 import { Button } from "@/components/ui/button";
@@ -70,14 +71,17 @@ async function Content({ searchParams }: Props) {
         title="Inventory"
         description={actor.officeName ?? "All offices, read-only."}
         actions={
-          canCreate ? (
-            <Button asChild>
-              <Link href={categoryId ? `/inventory/new?category=${categoryId}` : "/inventory/new"}>
-                <Plus aria-hidden />
-                Add item
-              </Link>
-            </Button>
-          ) : undefined
+          <>
+            {actor.permissions.includes("export.run") && <ExportMenu dataset="inventory" defaultTitle="Inventory report" organization={actor.workspaceName ?? actor.officeName ?? "All offices"} logoUrl={actor.logoUrl} />}
+            {canCreate && (
+              <Button asChild>
+                <Link href={categoryId ? `/inventory/new?category=${categoryId}` : "/inventory/new"}>
+                  <Plus aria-hidden />
+                  Add item
+                </Link>
+              </Button>
+            )}
+          </>
         }
       />
       <div className="flex flex-wrap items-center gap-2">

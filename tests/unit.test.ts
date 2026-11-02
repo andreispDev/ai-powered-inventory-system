@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { backtest, forecastItem, holt, keepsTheNumbers, startOfWeek, tsb, type ForecastInput } from "@/modules/forecast/engine";
 import { crumbsFor } from "@/components/shell/breadcrumbs";
+import { buildPdf, exportFileName, toCsv, type ExportTable } from "@/lib/export-format";
 import { parsePage } from "@/lib/pagination";
 import { canStartSession, isPastAbsoluteLimit } from "@/server/auth/sign-in-rules";
 import { effectivePermissions, isAllowed, type Grant } from "@/server/authz/catalog";
@@ -214,5 +215,42 @@ describe("pagination", () => {
   it("caps deep pages, with more room for logs", () => {
     expect(parsePage({ page: "999999" }).offset).toBeLessThanOrEqual(10_000);
     expect(parsePage({ page: "1000" }, { maxOffset: 1_000_000 }).offset).toBe(24_975);
+  });
+});
+
+describe("exports", () => {
+  const table: ExportTable = { title: "Inventory", columns: ["Name", "Qty"], rows: [["Dell, big", "4"]], total: 1, truncated: false };
+
+  it("writes CSV that spreadsheets read safely", () => {
+    const csv = toCsv({ columns: ["Name", "Note"], rows: [['A "quoted", name', "=HYPERLINK(1)"], ["-1+2", "@x"], ["Se\u00f1or", "line\nbreak"]] });
+    expect(csv.charCodeAt(0)).toBe(0xfeff);
+    expect(csv).toContain('"A ""quoted"", name",\'=HYPERLINK(1)');
+    expect(csv).toContain("'-1+2,'@x");
+    expect(csv).toContain('Se\u00f1or,"line\nbreak"');
+  });
+
+  it("names files safely", () => {
+    expect(exportFileName("Q3 Audit/Report!", "pdf", new Date(2026, 10, 3))).toBe("q3-audit-report-2026-11-03.pdf");
+    expect(exportFileName("???", "csv", new Date(2026, 10, 3))).toBe("export-2026-11-03.csv");
+  });
+
+  it("puts the custom header on every page", () => {
+    const long = { ...table, rows: Array.from({ length: 200 }, (_, i) => [`Item ${i}`, String(i)]), total: 200 };
+    const doc = buildPdf(long, { organization: "QC Supply Hub", title: "Q3 Report", note: "For the auditors", showDate: true, landscape: true });
+    const pages = doc.getNumberOfPages();
+    expect(pages).toBeGreaterThan(1);
+    const text = doc.output();
+    expect(text.split("Q3 Report")).toHaveLength(pages + 1);
+    expect(text.split("QC Supply Hub")).toHaveLength(pages + 1);
+    expect(text).toContain("For the auditors");
+    expect(text).toContain(`Page ${pages} of ${pages}`);
+    expect(text.slice(0, 5)).toBe("%PDF-");
+  });
+
+  it("copes with characters the PDF font lacks, and leaves optional parts out", () => {
+    const doc = buildPdf({ ...table, rows: [["\u65e5\u672c\u8a9e", "1"]] }, { organization: "", title: "T", note: "", showDate: false, landscape: false });
+    expect(doc.output()).toContain("???");
+    expect(doc.output()).not.toContain("Generated");
+    expect(doc.internal.pageSize.getHeight()).toBeGreaterThan(doc.internal.pageSize.getWidth());
   });
 });

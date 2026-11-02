@@ -1,13 +1,14 @@
-import { and, count, desc, eq, gte, ilike, lte, or, sql } from "drizzle-orm";
+import { count, desc, eq } from "drizzle-orm";
 import { ScrollText } from "lucide-react";
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { z } from "zod";
 import { TableFilter, TablePagination, TableSearch } from "@/components/data-table/pagination";
+import { ExportMenu } from "@/components/data-table/export-menu";
 import { AccessDenied } from "@/components/feedback/access-denied";
 import { EmptyState, PageContainer, PageHeader, TableSkeleton } from "@/components/shell/page";
 import { Card } from "@/components/ui/card";
 import { param, parsePage, type SearchParams } from "@/lib/pagination";
+import { ACTION_GROUPS, logWhere } from "@/modules/audit/log-filter";
 import { LogTable } from "@/modules/audit/log-table";
 import { requireActor } from "@/server/auth/session";
 import { appUser, auditLog, office } from "@/server/db/schema";
@@ -20,22 +21,6 @@ type Props = { searchParams: Promise<SearchParams> };
 // Logs only grow, so people need to be able to page well past the usual limit.
 const MAX_LOG_OFFSET = 1_000_000;
 
-const ACTION_GROUPS = [
-  { value: "item.", label: "Items" },
-  { value: "stock.", label: "Stock" },
-  { value: "category", label: "Categories" },
-  { value: "transfer.", label: "Transfers" },
-  { value: "assignment.", label: "Assignments" },
-  { value: "user.", label: "Accounts" },
-  { value: "office.", label: "Offices" },
-  { value: "permission.", label: "Permissions" },
-  { value: "announcement.", label: "Announcements" },
-  { value: "auth.", label: "Sign-ins" },
-  { value: "platform.", label: "Developer views" },
-];
-
-const validDay = (value: string | undefined) => (value && z.iso.date().safeParse(value).success ? value : undefined);
-
 async function Content({ searchParams }: Props) {
   const actor = await requireActor();
   const can = (permission: (typeof actor.permissions)[number]) => actor.permissions.includes(permission);
@@ -43,24 +28,9 @@ async function Content({ searchParams }: Props) {
 
   const params = await searchParams;
   const seesOthers = can("audit.read.all") || can("audit.read.office");
-  // RLS limits rows to the office. This narrows Users, and "My activity", to their own actions.
   const onlyMine = !seesOthers || param(params, "mine") === "1";
-  const q = param(params, "q")?.trim();
-  const like = q ? `%${q.replace(/[\\%_]/g, "\\$&")}%` : null;
-  const group = ACTION_GROUPS.find((g) => g.value === param(params, "action"))?.value;
-  const from = validDay(param(params, "from"));
-  const to = validDay(param(params, "to"));
-  const officeFilter = can("audit.read.all") ? param(params, "office") : undefined;
   const { page, pageSize, offset } = parsePage(params, { maxOffset: MAX_LOG_OFFSET });
-
-  const where = and(
-    onlyMine ? eq(auditLog.actorId, actor.id) : undefined,
-    like ? or(ilike(appUser.name, like), ilike(auditLog.action, like), ilike(auditLog.entityId, like)) : undefined,
-    group ? sql`${auditLog.action} like ${`${group}%`}` : undefined,
-    from ? gte(auditLog.at, new Date(`${from}T00:00:00`)) : undefined,
-    to ? lte(auditLog.at, new Date(`${to}T23:59:59.999`)) : undefined,
-    officeFilter && z.uuid().safeParse(officeFilter).success ? eq(auditLog.officeId, officeFilter) : undefined,
-  );
+  const where = logWhere(params, actor);
 
   const data = await readScoped(actor, async (tx) => {
     const rows = await tx
@@ -99,6 +69,7 @@ async function Content({ searchParams }: Props) {
       <PageHeader
         title={onlyMine ? "My activity" : "Logs"}
         description="Every entry is permanent. Nobody can edit or delete it, and changes to the log are detected."
+        actions={can("export.run") ? <ExportMenu dataset="logs" defaultTitle="Activity log" organization={actor.workspaceName ?? actor.officeName ?? "All offices"} logoUrl={actor.logoUrl} /> : undefined}
       />
       <div className="flex flex-wrap items-center gap-2">
         {seesOthers && <TableSearch placeholder="Search person, action or record…" />}

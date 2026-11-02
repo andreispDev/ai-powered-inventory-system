@@ -33,6 +33,7 @@ const ACTION_LABELS: Record<string, string> = {
   "category.created": "created a category",
   "item.file_added": "attached a file",
   "item.file_removed": "removed a file",
+  "data.exported": "exported data",
   "user.created": "created an account",
   "user.updated": "edited an account",
   "user.email_changed": "changed an account's email",
