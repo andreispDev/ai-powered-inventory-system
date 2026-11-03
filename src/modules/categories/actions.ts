@@ -322,3 +322,32 @@ export const purgeOfficeData = guard({
     return removed;
   },
 });
+
+/**
+ * Switches an empty table to a folder, or an empty folder to a table, for categories set up before
+ * folders existed. A table's columns are retired, not removed, so switching back brings them back.
+ */
+export const setCategoryShape = guard({
+  permission: "category.update",
+  input: z.object({ id: z.uuid(), isFolder: z.boolean() }),
+  run: async ({ input: { id, isFolder }, tx, audit }) => {
+    const [row] = await tx.select().from(category).where(eq(category.id, id)).for("update");
+    if (!row) throw missing();
+    if (row.isFolder === isFolder) return { id };
+    if (isFolder) {
+      if ((await depthOf(tx, id)) >= MAX_DEPTH) throw new AppError("CONFLICT", "The third level is always a table.");
+      const [{ total }] = await tx.select({ total: count() }).from(item).where(and(eq(item.categoryId, id), isNull(item.deletedAt)));
+      if (total > 0) throw new AppError("CONFLICT", "This table still has rows. Move or delete them first.");
+      await tx.update(categoryField).set({ retiredAt: new Date() }).where(and(eq(categoryField.categoryId, id), isNull(categoryField.retiredAt)));
+    } else {
+      if (!row.parentId) throw new AppError("CONFLICT", "A top-level category is always a folder.");
+      const [{ total }] = await tx.select({ total: count() }).from(category).where(eq(category.parentId, id));
+      if (total > 0) throw new AppError("CONFLICT", "This folder still has subcategories. Move or archive them first.");
+    }
+    await tx.update(category).set({ isFolder }).where(eq(category.id, id));
+    await audit({ action: isFolder ? "category.made_folder" : "category.made_table", entityType: "category", entityId: id });
+    revalidatePath("/categories");
+    revalidatePath(`/categories/${id}`);
+    return { id };
+  },
+});

@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { param, parsePage, type SearchParams } from "@/lib/pagination";
 import { getCategory, listCategories, listFields } from "@/modules/categories/queries";
+import { CategoryShapeButton } from "@/modules/categories/shape-button";
 import { ancestorsOf, withDescendants } from "@/modules/categories/tree";
 import { ItemsTable } from "@/modules/inventory/items-table";
 import { listItems, listPeople } from "@/modules/inventory/queries";
@@ -74,6 +75,13 @@ async function Content({ params, searchParams }: Props) {
   const isFolder = row.isFolder;
   const canAdd = can("item.create") && !archived && !isFolder;
   const canAddSub = can("category.create") && !archived && isFolder && path.length + 1 < MAX_DEPTH;
+  // Older categories may be the wrong shape. They can switch while empty.
+  const ownRows = categories.find((other) => other.id === row.id)?.items ?? 0;
+  const canReshape =
+    can("category.update") &&
+    !archived &&
+    path.length > 0 &&
+    (isFolder ? categories.every((other) => other.parentId !== row.id) : ownRows === 0 && path.length + 1 < MAX_DEPTH);
   const filterable = data.fields.flatMap((field) => {
     const options = filterOptions(field);
     return options ? [{ field, options }] : [];
@@ -109,6 +117,7 @@ async function Content({ params, searchParams }: Props) {
                   extraParams={{ category: row.id }}
                 />
               )}
+              {canReshape && <CategoryShapeButton id={row.id} isFolder={isFolder} />}
               {can("category.update") && !isFolder && (
                 <Button variant="outline" asChild>
                   <Link href={`/categories/${row.id}/columns`}>
