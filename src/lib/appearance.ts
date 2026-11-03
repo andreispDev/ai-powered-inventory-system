@@ -25,10 +25,15 @@ export const DEFAULT_APPEARANCE: Appearance = { mode: "system", theme: DEFAULT_T
 export function applyAppearance({ mode, theme, scale, font }: Appearance) {
   const root = document.documentElement;
   const dark = mode === "dark" || (mode === "system" && matchMedia("(prefers-color-scheme: dark)").matches);
+  // Anything with a hover fade would otherwise reach the new colors after the rest of the page.
+  root.classList.add("theme-switching");
   root.classList.toggle("dark", dark);
   root.dataset.theme = THEMES.some((t) => t.id === theme) ? theme : DEFAULT_THEME;
   root.dataset.scale = scale;
   root.dataset.font = font;
+  // Makes the browser apply the new colors now, while fades are off.
+  void getComputedStyle(document.body).color;
+  setTimeout(() => root.classList.remove("theme-switching"), 0);
 }
 
 /** Runs before first paint, so the stored look never flashes. Mirrors applyAppearance. */

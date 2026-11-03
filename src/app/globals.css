@@ -138,6 +138,14 @@
     radial-gradient(24rem 14rem at 100% 0%, color-mix(in oklch, var(--primary-foreground) 14%, transparent), transparent);
 }
 
+/* While the theme changes, everything switches together. Hover fades return straight after. */
+.theme-switching,
+.theme-switching *,
+.theme-switching *::before,
+.theme-switching *::after {
+  transition: none !important;
+}
+
 /* Sidebar links: quiet until hovered, and the current page is unmistakable. */
 [data-sidebar="menu-button"]:not([data-size="lg"]):not(:disabled):not([data-active="true"]) {
   color: color-mix(in oklch, var(--sidebar-foreground) 74%, transparent);
