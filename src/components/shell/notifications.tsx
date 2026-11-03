@@ -99,11 +99,18 @@ export function NotificationBell() {
           <ul className="max-h-80 divide-y overflow-y-auto">
             {summary.latest.map((note) => {
               const content = (
-                <>
-                  <span className={`block text-sm ${note.readAt ? "" : "font-medium"}`}>{note.title}</span>
-                  {note.body && <span className="text-muted-foreground block truncate text-xs">{note.body}</span>}
-                </>
+                <span className="flex gap-2.5">
+                  <span aria-hidden className={`mt-1.5 size-2 shrink-0 rounded-full ${note.readAt ? "" : "bg-primary"}`} />
+                  <span className="min-w-0">
+                    <span className={`block text-sm ${note.readAt ? "" : "font-medium"}`}>
+                      {!note.readAt && <span className="sr-only">Unread: </span>}
+                      {note.title}
+                    </span>
+                    {note.body && <span className="text-muted-foreground block truncate text-xs">{note.body}</span>}
+                  </span>
+                </span>
               );
+              const unread = note.readAt ? "" : "bg-primary/10";
               const onOpen = async () => {
                 setOpen(false);
                 if (!note.readAt) await markRead({ id: note.id });
@@ -112,11 +119,11 @@ export function NotificationBell() {
               return (
                 <li key={note.id}>
                   {note.link ? (
-                    <Link href={note.link} onClick={onOpen} className="hover:bg-accent block px-3 py-2">
+                    <Link href={note.link} onClick={onOpen} className={`hover:bg-accent block px-3 py-2 ${unread}`}>
                       {content}
                     </Link>
                   ) : (
-                    <button type="button" onClick={onOpen} className="hover:bg-accent block w-full px-3 py-2 text-left">
+                    <button type="button" onClick={onOpen} className={`hover:bg-accent block w-full px-3 py-2 text-left ${unread}`}>
                       {content}
                     </button>
                   )}

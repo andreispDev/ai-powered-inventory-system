@@ -33,18 +33,22 @@ async function Content({ searchParams }: Props) {
         <Card className="gap-0 overflow-hidden py-0">
           <ul className="divide-y">
             {rows.map((note) => (
-              <li key={note.id} className="flex items-start justify-between gap-4 px-4 py-3">
-                <div className="min-w-0">
-                  <p className={`text-sm ${note.readAt ? "" : "font-medium"}`}>
-                    {note.link ? (
-                      <Link href={note.link} className="hover:underline">
-                        {note.title}
-                      </Link>
-                    ) : (
-                      note.title
-                    )}
-                  </p>
-                  {note.body && <p className="text-muted-foreground mt-0.5 text-sm whitespace-pre-wrap">{note.body}</p>}
+              <li key={note.id} className={`flex items-start justify-between gap-4 px-4 py-3 ${note.readAt ? "" : "bg-primary/10"}`}>
+                <div className="flex min-w-0 gap-2.5">
+                  <span aria-hidden className={`mt-1.5 size-2 shrink-0 rounded-full ${note.readAt ? "" : "bg-primary"}`} />
+                  <div className="min-w-0">
+                    <p className={`text-sm ${note.readAt ? "" : "font-medium"}`}>
+                      {!note.readAt && <span className="sr-only">Unread: </span>}
+                      {note.link ? (
+                        <Link href={note.link} className="hover:underline">
+                          {note.title}
+                        </Link>
+                      ) : (
+                        note.title
+                      )}
+                    </p>
+                    {note.body && <p className="text-muted-foreground mt-0.5 text-sm whitespace-pre-wrap">{note.body}</p>}
+                  </div>
                 </div>
                 <span className="text-muted-foreground shrink-0 text-xs">
                   <LocalTime date={note.createdAt} />
