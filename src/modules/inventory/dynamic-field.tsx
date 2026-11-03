@@ -12,6 +12,7 @@ import {
   ListFilter,
   type LucideIcon,
   Mail,
+  Truck,
   Type,
   User,
 } from "lucide-react";
@@ -20,7 +21,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
-import { isNumeric, type FieldDef, type FieldType } from "@/modules/categories/field-schema";
+import { DEPLOYMENT_STATES, deploymentOf, isNumeric, type FieldDef, type FieldType } from "@/modules/categories/field-schema";
+import { formatDeployment } from "./format";
 
 const ICONS: Record<FieldType, LucideIcon> = {
   text: Type,
@@ -36,6 +38,7 @@ const ICONS: Record<FieldType, LucideIcon> = {
   url: Link2,
   email: Mail,
   person: User,
+  deployment: Truck,
 };
 
 /** Renders any custom column, so every form comes from the same definitions. */
@@ -104,6 +107,19 @@ export function DynamicField({
             ))}
           </NativeSelect>
         );
+      case "deployment": {
+        const current = deploymentOf(value);
+        return (
+          <NativeSelect id={id} value={current?.state ?? ""} onChange={(e) => onChange(e.target.value)}>
+            <option value="">Choose…</option>
+            {DEPLOYMENT_STATES.map((state) => (
+              <option key={state.value} value={state.value}>
+                {state.label}
+              </option>
+            ))}
+          </NativeSelect>
+        );
+      }
       default: {
         const inputType = isNumeric(type)
           ? "number"
@@ -132,8 +148,17 @@ export function DynamicField({
     }
   };
 
+  const deployment = type === "deployment" ? deploymentOf(value) : null;
+  // Who and when come from the saved row, or are filled in on save. They can't be typed.
+  const help =
+    deployment?.state === "deployed"
+      ? deployment.at
+        ? formatDeployment(deployment)
+        : "Your name and today's date are saved as who deployed it, and the office is told."
+      : config.help;
+
   return (
-    <FormField id={id} icon={ICONS[type]} label={label} required={config.required} help={config.help} errors={errors}>
+    <FormField id={id} icon={ICONS[type]} label={label} required={config.required} help={help} errors={errors}>
       {control()}
     </FormField>
   );

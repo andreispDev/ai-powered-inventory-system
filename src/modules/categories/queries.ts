@@ -12,6 +12,7 @@ export const listCategories = (tx: ScopedTx) =>
       id: category.id,
       name: category.name,
       kind: category.kind,
+      isFolder: category.isFolder,
       description: category.description,
       parentId: category.parentId,
       archivedAt: category.archivedAt,

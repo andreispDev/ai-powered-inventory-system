@@ -3,7 +3,9 @@ import { backtest, forecastItem, holt, keepsTheNumbers, startOfWeek, tsb, type F
 import { crumbsFor } from "@/components/shell/breadcrumbs";
 import { buildPdf, exportFileName, toCsv, type ExportTable } from "@/lib/export-format";
 import { parsePage } from "@/lib/pagination";
-import { ancestorsOf, withDescendants } from "@/modules/categories/tree";
+import { buildAttributesSchema, filterOptions, resolveDeployments, type FieldDef } from "@/modules/categories/field-schema";
+import { ancestorsOf, pathLabel, withDescendants } from "@/modules/categories/tree";
+import { formatAttribute } from "@/modules/inventory/format";
 import { emailChangedEmail, signInCodeEmail } from "@/server/auth/email-templates";
 import { DEFAULT_IDLE_MINUTES, isPastIdleLimit } from "@/server/auth/idle";
 import { canStartSession, isPastAbsoluteLimit } from "@/server/auth/sign-in-rules";
@@ -284,6 +286,52 @@ describe("category tree", () => {
     ];
     expect(withDescendants(loop, "a").sort()).toEqual(["a", "b"]);
     expect(ancestorsOf(loop, "a").length).toBeLessThanOrEqual(10);
+  });
+});
+
+describe("folders and tables", () => {
+  const rows = [
+    { id: "network", parentId: null, name: "Network" },
+    { id: "monitors", parentId: "network", name: "Monitors" },
+    { id: "asus", parentId: "monitors", name: "Asus" },
+  ];
+
+  it("names a table by its full path", () => {
+    expect(pathLabel(rows, "asus")).toBe("Network / Monitors / Asus");
+    expect(pathLabel(rows, "network")).toBe("Network");
+  });
+});
+
+describe("deployment column", () => {
+  const field: FieldDef = { key: "deployment", label: "Deployment", type: "deployment", config: {} };
+  const maria = { id: "u1", name: "Maria" };
+  const now = new Date("2026-11-03T08:00:00Z");
+  const parse = (value: unknown) => buildAttributesSchema([field]).parse({ deployment: value });
+
+  it("accepts only its states, and keeps just the state of a saved value", () => {
+    expect(parse("deployed")).toEqual({ deployment: "deployed" });
+    expect(parse({ state: "office", by: "forged" })).toEqual({ deployment: "office" });
+    expect(() => parse("lost")).toThrow();
+  });
+
+  it("records who deployed it and when, from the server, and says so once", () => {
+    const first = resolveDeployments([field], { deployment: "deployed" }, {}, maria, now);
+    expect(first.attributes.deployment).toEqual({ state: "deployed", by: "u1", byName: "Maria", at: now.toISOString() });
+    expect(first.deployed).toEqual([field]);
+
+    // Saving again keeps the original who and when, and doesn't announce it again.
+    const again = resolveDeployments([field], { deployment: "deployed" }, first.attributes, { id: "u2", name: "Juan" }, new Date());
+    expect(again.attributes.deployment).toEqual(first.attributes.deployment);
+    expect(again.deployed).toEqual([]);
+
+    const back = resolveDeployments([field], { deployment: "office" }, first.attributes, maria, now);
+    expect(back.attributes.deployment).toEqual({ state: "office" });
+  });
+
+  it("reads well in tables and filters", () => {
+    expect(formatAttribute({ state: "office" }, field, {})).toBe("Office only");
+    expect(formatAttribute({ state: "deployed", byName: "Maria", at: now.toISOString() }, field, {})).toMatch(/^Deployed by Maria on Nov \d, 2026$/);
+    expect(filterOptions(field)?.map((option) => option.label)).toEqual(["Office only", "Deployed"]);
   });
 });
 

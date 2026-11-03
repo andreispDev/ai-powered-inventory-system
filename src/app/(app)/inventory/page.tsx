@@ -15,6 +15,7 @@ import { withDescendants } from "@/modules/categories/tree";
 import { ItemsTable } from "@/modules/inventory/items-table";
 import { listItems, listPeople } from "@/modules/inventory/queries";
 import { ITEM_STATUSES } from "@/modules/inventory/schemas";
+import { filterOptions } from "@/modules/categories/field-schema";
 import { requireActor } from "@/server/auth/session";
 import { readScoped } from "@/server/guard/read";
 
@@ -64,7 +65,10 @@ async function Content({ searchParams }: Props) {
 
   const canCreate = actor.permissions.includes("item.create");
   const filtered = q || status || categoryId;
-  const filterable = data.fields.filter((field) => field.type === "select" || field.type === "multi_select" || field.type === "boolean");
+  const filterable = data.fields.flatMap((field) => {
+    const options = filterOptions(field);
+    return options ? [{ field, options }] : [];
+  });
 
   return (
     <PageContainer width="wide">
@@ -93,21 +97,9 @@ async function Content({ searchParams }: Props) {
           options={data.categories.map((c) => ({ value: c.id, label: actor.officeId ? c.name : `${c.officeName}: ${c.name}` }))}
         />
         <TableFilter name="status" label="Status" options={ITEM_STATUSES} />
-        {filterable.map((field) => (
-          <TableFilter
-            key={field.key}
-            name={`f_${field.key}`}
-            label={field.label}
-            options={
-              field.type === "boolean"
-                ? [
-                    { value: "true", label: "Yes" },
-                    { value: "false", label: "No" },
-                  ]
-                : (field.config.options ?? []).map((option) => ({ value: option, label: option }))
-            }
-          />
-        ))}
+        {filterable.map(({ field, options }) => (
+            <TableFilter key={field.key} name={`f_${field.key}`} label={field.label} options={options} />
+          ))}
         {canRestore && <TableFilter name="view" label="Show" options={[{ value: "deleted", label: "Deleted items" }]} />}
       </div>
       {!data.fieldsCategoryId && data.categories.length > 1 && <p className="text-muted-foreground text-xs">Choose a category to see its own columns.</p>}

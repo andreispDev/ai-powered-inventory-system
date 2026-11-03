@@ -225,6 +225,8 @@ export const category = pgTable(
     description: text("description"),
     /** Set once when created: records aren't counted stock, and stay out of inventory */
     kind: categoryKindEnum("kind").notNull().default("stock"),
+    /** A folder only holds subcategories. Everything else is a table, with columns and rows. */
+    isFolder: boolean("is_folder").notNull().default(false),
     /** Standard item fields this category has turned off */
     disabledFields: text("disabled_fields").array().notNull().default(sql`'{}'::text[]`),
     archivedAt: timestamp("archived_at", { withTimezone: true }),
@@ -282,6 +284,8 @@ export const item = pgTable(
     warrantyExpiry: date("warranty_expiry"),
     notes: text("notes"),
     attributes: jsonb("attributes").$type<Record<string, unknown>>().notNull().default({}),
+    /** Null for rows made before this was kept, or by a transfer */
+    createdBy: uuid("created_by").references(() => appUser.id),
     searchTsv: tsvector("search_tsv").generatedAlwaysAs(
       sql`to_tsvector('simple', coalesce(name, '') || ' ' || coalesce(sku, '') || ' ' || coalesce(serial_number, '') || ' ' || coalesce(notes, ''))`,
     ),

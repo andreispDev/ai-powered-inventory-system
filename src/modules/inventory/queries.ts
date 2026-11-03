@@ -56,7 +56,8 @@ export async function listItems(tx: ScopedTx, filters: ItemFilters) {
     const field = fields.find((f) => f.key === key);
     if (!field) continue;
     // Keys come from definitions and values are bound, so user text never becomes SQL.
-    const typed = field.type === "boolean" ? value === "true" : field.type === "multi_select" ? [value] : value;
+    const typed =
+      field.type === "boolean" ? value === "true" : field.type === "multi_select" ? [value] : field.type === "deployment" ? { state: value } : value;
     conditions.push(sql`${item.attributes} @> ${JSON.stringify({ [key]: typed })}::jsonb`);
   }
 
@@ -69,7 +70,7 @@ export async function listItems(tx: ScopedTx, filters: ItemFilters) {
   } else if (sortKey?.startsWith("attr:")) {
     const field = fields.find((f) => f.key === sortKey.slice(5));
     if (field) {
-      const value = sql`${item.attributes} ->> ${field.key}`;
+      const value = field.type === "deployment" ? sql`${item.attributes} -> ${field.key} ->> 'state'` : sql`${item.attributes} ->> ${field.key}`;
       orderBy = direction(isNumeric(field.type) ? sql`(${value})::numeric` : value);
     }
   }
@@ -86,12 +87,14 @@ export async function listItems(tx: ScopedTx, filters: ItemFilters) {
         attributes: item.attributes,
         updatedAt: item.updatedAt,
         createdAt: item.createdAt,
+        createdByName: appUser.name,
         categoryName: category.name,
         officeName: office.name,
       })
       .from(item)
       .innerJoin(category, eq(item.categoryId, category.id))
       .innerJoin(office, eq(item.officeId, office.id))
+      .leftJoin(appUser, eq(item.createdBy, appUser.id))
       .where(where)
       .orderBy(orderBy, asc(item.id))
       .limit(filters.limit)

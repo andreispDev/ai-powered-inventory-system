@@ -19,6 +19,7 @@ export type ItemRow = {
   id: string;
   name: string;
   createdAt: Date;
+  createdByName: string | null;
   status: string;
   quantity: number;
   unit: string;
@@ -131,6 +132,7 @@ export function ItemsTable({
         render: (row) => formatAttribute(row.attributes[field.key], field, people),
       }),
     ),
+    { id: "createdBy", label: "Added by", render: (row) => row.createdByName ?? "—" },
     { id: "createdAt", label: "Date added", sort: "createdAt", render: (row) => <LocalTime date={row.createdAt} /> },
   ];
 

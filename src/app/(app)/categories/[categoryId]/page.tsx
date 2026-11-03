@@ -1,4 +1,4 @@
-import { Columns3, Folder, FolderPlus, Plus } from "lucide-react";
+import { Columns3, Folder, FolderPlus, Plus, Table2 } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -15,6 +15,7 @@ import { getCategory, listCategories, listFields } from "@/modules/categories/qu
 import { ancestorsOf, withDescendants } from "@/modules/categories/tree";
 import { ItemsTable } from "@/modules/inventory/items-table";
 import { listItems, listPeople } from "@/modules/inventory/queries";
+import { filterOptions } from "@/modules/categories/field-schema";
 import { requireActor } from "@/server/auth/session";
 import { readScoped } from "@/server/guard/read";
 
@@ -69,11 +70,14 @@ async function Content({ params, searchParams }: Props) {
   const subcategories = categories.filter((other) => other.parentId === row.id && !other.archivedAt);
   const countIn = (id: string) => withDescendants(categories, id).reduce((sum, other) => sum + (categories.find((c) => c.id === other)?.items ?? 0), 0);
   const addHref = `/${records ? "records" : "inventory"}/new?category=${row.id}`;
-  // A top-level category is a folder, unless it was set up with its own columns before.
-  const isFolder = path.length === 0 && data.fields.length === 0;
+  // A folder holds subcategories, and a table holds rows. Never both.
+  const isFolder = row.isFolder;
   const canAdd = can("item.create") && !archived && !isFolder;
-  const canAddSub = can("category.create") && !archived && path.length + 1 < MAX_DEPTH;
-  const filterable = data.fields.filter((field) => field.type === "select" || field.type === "multi_select" || field.type === "boolean");
+  const canAddSub = can("category.create") && !archived && isFolder && path.length + 1 < MAX_DEPTH;
+  const filterable = data.fields.flatMap((field) => {
+    const options = filterOptions(field);
+    return options ? [{ field, options }] : [];
+  });
   const filtered = q || Object.keys(query).some((name) => name.startsWith("f_"));
 
   return (
@@ -105,7 +109,7 @@ async function Content({ params, searchParams }: Props) {
                   extraParams={{ category: row.id }}
                 />
               )}
-              {can("category.update") && (
+              {can("category.update") && !isFolder && (
                 <Button variant="outline" asChild>
                   <Link href={`/categories/${row.id}/columns`}>
                     <Columns3 aria-hidden />
@@ -141,7 +145,7 @@ async function Content({ params, searchParams }: Props) {
               <Card className="surface-soft hover:shadow-raised h-full p-4 transition-shadow duration-[var(--motion-base)]">
                 <div className="flex items-center gap-3">
                   <span className="bg-primary/10 text-primary flex size-9 shrink-0 items-center justify-center rounded-lg">
-                    <Folder className="size-4.5" aria-hidden />
+                    {sub.isFolder ? <Folder className="size-4.5" aria-hidden /> : <Table2 className="size-4.5" aria-hidden />}
                   </span>
                   <div className="min-w-0">
                     <p className="truncate font-medium">{sub.name}</p>
@@ -157,23 +161,11 @@ async function Content({ params, searchParams }: Props) {
         </div>
       )}
 
-      {(data.total > 0 || filtered || subcategories.length === 0) && (
+      {(data.total > 0 || filtered || (!isFolder && subcategories.length === 0)) && (
         <div className="flex flex-wrap items-center gap-2">
           <TableSearch placeholder={`Search ${row.name}…`} />
-          {filterable.map((field) => (
-            <TableFilter
-              key={field.key}
-              name={`f_${field.key}`}
-              label={field.label}
-              options={
-                field.type === "boolean"
-                  ? [
-                      { value: "true", label: "Yes" },
-                      { value: "false", label: "No" },
-                    ]
-                  : (field.config.options ?? []).map((option) => ({ value: option, label: option }))
-              }
-            />
+          {filterable.map(({ field, options }) => (
+            <TableFilter key={field.key} name={`f_${field.key}`} label={field.label} options={options} />
           ))}
         </div>
       )}
@@ -183,7 +175,7 @@ async function Content({ params, searchParams }: Props) {
           <EmptyState
             icon={Folder}
             title={filtered ? `No ${noun}s match` : isFolder ? `Nothing in ${row.name} yet` : `No ${noun}s in ${row.name} yet`}
-            description={filtered ? "Try clearing a filter." : isFolder ? (canAddSub ? "Add a subcategory, such as Laptop. Each one gets its own table and columns." : "Subcategories will appear here.") : canAdd ? `Add your first ${noun} to get started.` : `${noun[0].toUpperCase()}${noun.slice(1)}s will appear here.`}
+            description={filtered ? "Try clearing a filter." : isFolder ? (canAddSub ? "Add a subcategory. It can be another folder, or a table with its own columns." : "Subcategories will appear here.") : canAdd ? `Add your first ${noun} to get started.` : `${noun[0].toUpperCase()}${noun.slice(1)}s will appear here.`}
           />
         ) : null
       ) : (

@@ -9,6 +9,12 @@ export function withDescendants(rows: readonly Node[], id: string): string[] {
   return found;
 }
 
+/** "Network / Monitors / Asus", for picking a table without opening each folder */
+export function pathLabel(rows: readonly (Node & { name: string })[], id: string): string {
+  const row = rows.find((other) => other.id === id);
+  return [...ancestorsOf(rows, id), ...(row ? [row] : [])].map((part) => part.name).join(" / ");
+}
+
 /** From the top level down to this category's parent. */
 export function ancestorsOf<T extends Node>(rows: readonly T[], id: string): T[] {
   const path: T[] = [];

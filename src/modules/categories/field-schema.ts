@@ -14,6 +14,7 @@ export const FIELD_TYPES = [
   { id: "url", label: "Web link" },
   { id: "email", label: "Email" },
   { id: "person", label: "Person" },
+  { id: "deployment", label: "Deployment (office only / deployed)" },
 ] as const;
 
 export type FieldType = (typeof FIELD_TYPES)[number]["id"];
@@ -42,6 +43,24 @@ export type FieldDef = { key: string; label: string; type: FieldType; config: Fi
 const NUMERIC: readonly FieldType[] = ["integer", "decimal", "currency"];
 export const isNumeric = (type: FieldType) => NUMERIC.includes(type);
 export const isChoice = (type: FieldType) => type === "select" || type === "multi_select";
+
+export const DEPLOYMENT_STATES = [
+  { value: "office", label: "Office only" },
+  { value: "deployed", label: "Deployed" },
+] as const;
+
+export type DeploymentState = (typeof DEPLOYMENT_STATES)[number]["value"];
+
+/** Stored in item.attributes. Who and when are filled in by the server, never by the form. */
+export type Deployment = { state: DeploymentState; by?: string; byName?: string; at?: string };
+
+const STATE_IDS = DEPLOYMENT_STATES.map((state) => state.value) as [DeploymentState, ...DeploymentState[]];
+
+export function deploymentOf(value: unknown): Deployment | null {
+  if (typeof value === "string") return STATE_IDS.includes(value as DeploymentState) ? { state: value as DeploymentState } : null;
+  if (value && typeof value === "object" && STATE_IDS.includes((value as Deployment).state)) return value as Deployment;
+  return null;
+}
 
 export const fieldConfigSchema = z
   .object({
@@ -113,6 +132,11 @@ function valueSchema({ type, config, label }: FieldDef): z.ZodType {
       return z.enum((config.options ?? []) as [string, ...string[]], { error: `Choose a value for ${label}.` });
     case "multi_select":
       return z.array(z.enum((config.options ?? []) as [string, ...string[]]));
+    case "deployment":
+      // The form sends just the state. A saved value comes back whole, so only its state is kept.
+      return z
+        .union([z.enum(STATE_IDS), z.looseObject({ state: z.enum(STATE_IDS) })], { error: `Choose a value for ${label}.` })
+        .transform((value) => (typeof value === "string" ? value : value.state));
     default: {
       let text = z.string().trim().max(type === "long_text" ? 5000 : 500);
       if (config.pattern) text = text.regex(new RegExp(config.pattern), `${label} isn't in the expected format.`);
@@ -123,6 +147,14 @@ function valueSchema({ type, config, label }: FieldDef): z.ZodType {
 
 const isEmpty = (value: unknown) =>
   value === undefined || value === null || value === "" || (Array.isArray(value) && value.length === 0);
+
+/** The choices a table filter offers for a column, or null when it can't be filtered */
+export function filterOptions({ type, config }: FieldDef): { value: string; label: string }[] | null {
+  if (type === "boolean") return [{ value: "true", label: "Yes" }, { value: "false", label: "No" }];
+  if (type === "deployment") return DEPLOYMENT_STATES.map((state) => ({ ...state }));
+  if (isChoice(type)) return (config.options ?? []).map((option) => ({ value: option, label: option }));
+  return null;
+}
 
 /** One schema for the form and the server, built from the category's columns */
 export function buildAttributesSchema(fields: readonly FieldDef[]) {
@@ -142,6 +174,33 @@ export function buildAttributesSchema(fields: readonly FieldDef[]) {
     }
     return output;
   });
+}
+
+/**
+ * Turns each deployment state from the form into what's stored. Switching to Deployed records who and when;
+ * staying Deployed keeps the original who and when. Returns the columns that just became Deployed.
+ */
+export function resolveDeployments(
+  fields: readonly FieldDef[],
+  attributes: Record<string, unknown>,
+  before: Record<string, unknown>,
+  actor: { id: string; name: string },
+  now = new Date(),
+) {
+  const output = { ...attributes };
+  const deployed: FieldDef[] = [];
+  for (const field of fields) {
+    if (field.type !== "deployment" || output[field.key] === undefined) continue;
+    const state = output[field.key] as DeploymentState;
+    const previous = deploymentOf(before[field.key]);
+    if (state === "office") output[field.key] = { state } satisfies Deployment;
+    else if (previous?.state === "deployed") output[field.key] = previous;
+    else {
+      output[field.key] = { state, by: actor.id, byName: actor.name, at: now.toISOString() } satisfies Deployment;
+      deployed.push(field);
+    }
+  }
+  return { attributes: output, deployed };
 }
 
 /** Explains why a column change would break existing data, or returns null if it's safe. */

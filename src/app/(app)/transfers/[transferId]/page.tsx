@@ -27,7 +27,7 @@ async function Content({ params }: Props) {
     const row = await getTransfer(tx, transferId);
     if (!row) return null;
     const receiving = row.toOfficeId === actor.officeId && row.status === "pending" && actor.permissions.includes("transfer.respond");
-    const categories = receiving ? (await listCategories(tx)).filter((c) => !c.archivedAt) : [];
+    const categories = receiving ? (await listCategories(tx)).filter((c) => !c.archivedAt && !c.isFolder) : [];
     return { row, receiving, categories };
   });
   if (!data) notFound();

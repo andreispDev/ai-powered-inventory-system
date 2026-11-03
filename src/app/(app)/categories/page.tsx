@@ -14,6 +14,7 @@ import { parsePage, type SearchParams } from "@/lib/pagination";
 import { listCategories } from "@/modules/categories/queries";
 import { withDescendants } from "@/modules/categories/tree";
 import { CategoryArchiveButton } from "@/modules/categories/archive-button";
+import { PurgePanel } from "@/modules/categories/purge-panel";
 import { requireActor } from "@/server/auth/session";
 import { readScoped } from "@/server/guard/read";
 
@@ -98,6 +99,7 @@ async function Content({ searchParams }: Props) {
           <TablePagination total={topLevel.length} page={page} pageSize={pageSize} />
         </Card>
       )}
+      {actor.role === "admin" && actor.officeName && <PurgePanel officeName={actor.officeName} approved={actor.permissions.includes("data.purge")} />}
     </PageContainer>
   );
 }

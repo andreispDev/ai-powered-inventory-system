@@ -67,23 +67,32 @@ export const createCategory = guard({
   input: categoryInput.extend({
     parentId: z.uuid().optional(),
     kind: z.enum(["stock", "records"]).default("stock"),
+    /** Ignored at the top level, which is always a folder */
+    isFolder: z.boolean().default(false),
     columns: z.array(newColumn).max(MAX_FIELDS_PER_CATEGORY).default([]),
     disabledFields: z.array(z.enum(OPTIONAL_ITEM_FIELDS.map((f) => f.id) as [OptionalItemField, ...OptionalItemField[]])).default([]),
   }),
-  run: async ({ input: { columns, ...input }, tx, actor, audit }) => {
+  run: async ({ input: { columns: requested, ...input }, tx, actor, audit }) => {
     const officeId = officeOf(actor);
-    if (input.parentId && (await depthOf(tx, input.parentId)) >= MAX_DEPTH) {
+    const depth = input.parentId ? (await depthOf(tx, input.parentId)) + 1 : 1;
+    if (depth > MAX_DEPTH) {
       throw new AppError("VALIDATION", "Categories can be nested up to 3 levels.", {
         parentId: ["This is already at the deepest level."],
       });
     }
-    // A category sits only inside its own kind, so one tree never mixes stock and records.
     if (input.parentId) {
-      const [parent] = await tx.select({ kind: category.kind }).from(category).where(eq(category.id, input.parentId));
-      if (parent && parent.kind !== input.kind) {
+      const [parent] = await tx.select({ kind: category.kind, isFolder: category.isFolder }).from(category).where(eq(category.id, input.parentId));
+      if (!parent) throw missing();
+      // A category sits only inside its own kind, so one tree never mixes stock and records.
+      if (parent.kind !== input.kind) {
         throw new AppError("VALIDATION", "Please check the highlighted fields.", { parentId: ["That category is a different type."] });
       }
+      if (!parent.isFolder) throw new AppError("CONFLICT", "Subcategories go inside folders. This one is a table.");
     }
+    // The top is always a folder, and the deepest level is always a table.
+    input.isFolder = depth === 1 || (input.isFolder && depth < MAX_DEPTH);
+    const columns = input.isFolder ? [] : requested;
+    if (input.isFolder) input.disabledFields = [];
     let row;
     try {
       [row] = await tx.insert(category).values({ ...input, officeId }).returning({ id: category.id });
@@ -163,8 +172,9 @@ export const addField = guard({
   run: async ({ input, tx, actor, audit }) => {
     const officeId = officeOf(actor);
     checkChoiceOptions(input.type, input.config);
-    const [parent] = await tx.select({ id: category.id }).from(category).where(eq(category.id, input.categoryId)).for("update");
+    const [parent] = await tx.select({ id: category.id, isFolder: category.isFolder }).from(category).where(eq(category.id, input.categoryId)).for("update");
     if (!parent) throw missing();
+    if (parent.isFolder) throw new AppError("CONFLICT", "A folder has no columns. Add them to a table inside it.");
 
     const existing = await tx
       .select({ key: categoryField.key, position: categoryField.position, retiredAt: categoryField.retiredAt })
@@ -271,5 +281,44 @@ export const setFieldDisabled = guard({
     await audit({ action: disabled ? "category.field_disabled" : "category.field_enabled", entityType: "category", entityId: id, after: { field } });
     revalidatePath(`/categories/${id}`);
     return { id };
+  },
+});
+
+const PURGE_ERRORS: Record<string, AppError> = {
+  purge_not_approved: new AppError("FORBIDDEN", "A Developer needs to approve this first. Ask on the Request access page."),
+  purge_not_allowed: new AppError("FORBIDDEN", "Inventory changes are made by office accounts."),
+};
+
+/** Permanent. Each run uses up the Developer's approval, so the next one needs a new approval. */
+export const purgeOfficeData = guard({
+  permission: "data.purge",
+  input: z.object({ categories: z.boolean(), confirm: z.string() }),
+  run: async ({ input, tx, actor, audit }) => {
+    officeOf(actor);
+    if (input.confirm.trim() !== actor.officeName) {
+      throw new AppError("VALIDATION", "Please check the highlighted fields.", { confirm: [`Type ${actor.officeName} exactly.`] });
+    }
+    let removed: { items: number; categories: number };
+    try {
+      const { rows } = (await tx.execute(sql`select purge_office_data(${input.categories}) as removed`)) as unknown as {
+        rows: { removed: { items: number; categories: number } }[];
+      };
+      removed = rows[0].removed;
+    } catch (error) {
+      const cause = (error as { cause?: Error }).cause?.message ?? (error as Error).message;
+      const known = Object.keys(PURGE_ERRORS).find((key) => cause.includes(key));
+      if (known) throw PURGE_ERRORS[known];
+      throw error;
+    }
+    await audit({
+      action: input.categories ? "data.purged_all" : "data.purged_rows",
+      entityType: "office",
+      entityId: actor.officeId!,
+      after: removed,
+    });
+    revalidatePath("/categories");
+    revalidatePath("/inventory");
+    revalidatePath("/records");
+    return removed;
   },
 });

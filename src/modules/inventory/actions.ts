@@ -3,9 +3,9 @@
 import { and, eq, isNotNull, isNull, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { buildAttributesSchema, OPTIONAL_ITEM_FIELDS } from "@/modules/categories/field-schema";
+import { buildAttributesSchema, OPTIONAL_ITEM_FIELDS, resolveDeployments, type FieldDef } from "@/modules/categories/field-schema";
 import { listFields } from "@/modules/categories/queries";
-import { category, item, itemAttachment, stockMovement } from "@/server/db/schema";
+import { announcement, category, item, itemAttachment, stockMovement } from "@/server/db/schema";
 import type { ScopedTx } from "@/server/db/scope";
 import { AppError, isUniqueViolation } from "@/server/guard/errors";
 import { guard } from "@/server/guard/guard";
@@ -46,7 +46,34 @@ async function validateAttributes(tx: ScopedTx, categoryId: string, attributes: 
     for (const issue of parsed.error.issues) fieldErrors[`attr.${String(issue.path[0])}`] = [issue.message];
     throw new AppError("VALIDATION", "Please check the highlighted fields.", fieldErrors);
   }
-  return { attributes: parsed.data, activeKeys: new Set(fields.map((f) => f.key)) };
+  return { attributes: parsed.data, fields, activeKeys: new Set(fields.map((f) => f.key)) };
+}
+
+type Actor = { id: string; name: string; officeId: string | null };
+
+/** Tells the whole office when something is marked Deployed. Sent like any announcement, by the worker. */
+async function announceDeployed(
+  tx: ScopedTx,
+  emit: (event: "announcement.created", payload: { announcementId: string }) => Promise<void>,
+  actor: Actor,
+  itemName: string,
+  categoryName: string,
+  fields: readonly FieldDef[],
+) {
+  if (!fields.length || !actor.officeId) return;
+  const [row] = await tx
+    .insert(announcement)
+    .values({
+      officeId: actor.officeId,
+      audienceType: "offices",
+      audienceOfficeIds: [actor.officeId],
+      title: `${itemName} deployed`,
+      body: `${actor.name} marked ${itemName} (${categoryName}) as deployed${fields.length > 1 || fields[0].label !== "Deployment" ? ` in ${fields.map((field) => field.label).join(", ")}` : ""}.`,
+      urgent: false,
+      createdBy: actor.id,
+    })
+    .returning({ id: announcement.id });
+  await emit("announcement.created", { announcementId: row.id });
 }
 
 /** Records aren't counted, so nothing about stock applies to them. */
@@ -61,19 +88,21 @@ export const createItem = guard({
     categoryId: z.uuid(),
     quantity: z.coerce.number().int("Enter a whole number.").min(0, "Can't be negative.").max(1_000_000),
   }),
-  run: async ({ input: { attributes: rawAttributes, quantity: requested, ...core }, tx, actor, audit }) => {
+  run: async ({ input: { attributes: rawAttributes, quantity: requested, ...core }, tx, actor, audit, emit }) => {
     if (!actor.officeId) throw new AppError("FORBIDDEN", "Inventory changes are made by office accounts.");
     const [parent] = await tx.select().from(category).where(eq(category.id, core.categoryId));
     if (!parent) throw new AppError("NOT_FOUND", "This category no longer exists.");
     if (parent.archivedAt) throw new AppError("CONFLICT", "This category is archived.");
-    const { attributes } = await validateAttributes(tx, core.categoryId, rawAttributes);
+    if (parent.isFolder) throw new AppError("CONFLICT", "This is a folder. Add the row to a table inside it.");
+    const validated = await validateAttributes(tx, core.categoryId, rawAttributes);
+    const { attributes, deployed } = resolveDeployments(validated.fields, validated.attributes, {}, actor);
     const quantity = parent.kind === "records" ? 0 : requested;
 
     let row;
     try {
       [row] = await tx
         .insert(item)
-        .values({ ...withoutDisabled(core, parent.disabledFields), attributes, quantity, officeId: actor.officeId })
+        .values({ ...withoutDisabled(core, parent.disabledFields), attributes, quantity, officeId: actor.officeId, createdBy: actor.id })
         .returning({ id: item.id });
     } catch (error) {
       if (isUniqueViolation(error)) throw skuTaken();
@@ -91,6 +120,7 @@ export const createItem = guard({
       });
     }
     await audit({ action: "item.created", entityType: "item", entityId: row.id, after: { ...core, quantity, attributes } });
+    await announceDeployed(tx, emit, actor, core.name, parent.name, deployed);
     revalidatePath("/inventory");
     revalidatePath("/records");
     return { id: row.id };
@@ -100,7 +130,7 @@ export const createItem = guard({
 export const updateItem = guard({
   permission: "item.update",
   input: itemCoreSchema.extend({ id: z.uuid(), version: z.number().int() }),
-  run: async ({ input: { id, version, attributes: rawAttributes, ...core }, tx, audit }) => {
+  run: async ({ input: { id, version, attributes: rawAttributes, ...core }, tx, actor, audit, emit }) => {
     const [before] = await tx.select().from(item).where(and(eq(item.id, id), isNull(item.deletedAt)));
     if (!before) throw missing();
 
@@ -117,8 +147,10 @@ export const updateItem = guard({
       );
     }
 
-    const { attributes, activeKeys } = await validateAttributes(tx, before.categoryId, rawAttributes);
-    const [parent] = await tx.select({ disabledFields: category.disabledFields }).from(category).where(eq(category.id, before.categoryId));
+    const validated = await validateAttributes(tx, before.categoryId, rawAttributes);
+    const { attributes, deployed } = resolveDeployments(validated.fields, validated.attributes, before.attributes, actor);
+    const { activeKeys } = validated;
+    const [parent] = await tx.select({ name: category.name, disabledFields: category.disabledFields }).from(category).where(eq(category.id, before.categoryId));
     const allowed = withoutDisabled(core, parent?.disabledFields ?? []);
     // Values in retired columns are kept, in case the column comes back.
     const kept = Object.fromEntries(Object.entries(before.attributes).filter(([key]) => !activeKeys.has(key)));
@@ -138,8 +170,11 @@ export const updateItem = guard({
     if (!updated) throw new AppError("CONFLICT", "Someone else just changed this item. Reload and try again.");
 
     await audit({ action: "item.updated", entityType: "item", entityId: id, before, after: { ...allowed, attributes: merged } });
+    await announceDeployed(tx, emit, actor, core.name, parent?.name ?? "", deployed);
     revalidatePath(`/inventory/${id}`);
+    revalidatePath(`/records/${id}`);
     revalidatePath("/inventory");
+    revalidatePath("/records");
     return { id };
   },
 });

@@ -8,6 +8,7 @@ import { EmptyState, PageContainer, PageHeader, PageSkeleton } from "@/component
 import { Button } from "@/components/ui/button";
 import { param, type SearchParams } from "@/lib/pagination";
 import { getCategory, listCategories, listFields } from "@/modules/categories/queries";
+import { pathLabel } from "@/modules/categories/tree";
 import { ItemForm } from "@/modules/inventory/item-form";
 import { listItemNames, listPeople } from "@/modules/inventory/queries";
 import { requireActor } from "@/server/auth/session";
@@ -25,7 +26,7 @@ async function Content({ searchParams }: Props) {
   if (categoryId && z.uuid().safeParse(categoryId).success) {
     const data = await readScoped(actor, async (tx) => {
       const row = await getCategory(tx, categoryId);
-      if (!row || row.archivedAt || row.kind !== "stock") return null;
+      if (!row || row.archivedAt || row.isFolder || row.kind !== "stock") return null;
       return { row, fields: await listFields(tx, categoryId), people: await listPeople(tx), savedNames: await listItemNames(tx, "stock") };
     });
     if (data) {
@@ -44,7 +45,9 @@ async function Content({ searchParams }: Props) {
     }
   }
 
-  const categories = (await readScoped(actor, listCategories)).filter((c) => !c.archivedAt && c.kind === "stock");
+  const all = await readScoped(actor, listCategories);
+  // Only tables hold items. Their full path tells apart two "Asus" tables in different folders.
+  const categories = all.filter((c) => !c.archivedAt && !c.isFolder && c.kind === "stock");
   return (
     <PageContainer width="narrow">
       <PageHeader title="Add item" description="Which category does it belong to?" />
@@ -62,7 +65,7 @@ async function Content({ searchParams }: Props) {
           {categories.map((category) => (
             <li key={category.id}>
               <Link href={`/inventory/new?category=${category.id}`} className="hover:bg-accent block px-4 py-3 text-sm font-medium">
-                {category.name}
+                {pathLabel(all, category.id)}
               </Link>
             </li>
           ))}

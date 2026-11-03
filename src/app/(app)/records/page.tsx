@@ -14,6 +14,7 @@ import { getCategory, listCategories, listFields } from "@/modules/categories/qu
 import { withDescendants } from "@/modules/categories/tree";
 import { ItemsTable } from "@/modules/inventory/items-table";
 import { listItems, listPeople } from "@/modules/inventory/queries";
+import { filterOptions } from "@/modules/categories/field-schema";
 import { requireActor } from "@/server/auth/session";
 import { readScoped } from "@/server/guard/read";
 
@@ -61,7 +62,10 @@ async function Content({ searchParams }: Props) {
   });
 
   const canCreate = actor.permissions.includes("item.create");
-  const filterable = data.fields.filter((field) => field.type === "select" || field.type === "multi_select" || field.type === "boolean");
+  const filterable = data.fields.flatMap((field) => {
+    const options = filterOptions(field);
+    return options ? [{ field, options }] : [];
+  });
 
   return (
     <PageContainer width="wide">
@@ -85,21 +89,9 @@ async function Content({ searchParams }: Props) {
       <div className="flex flex-wrap items-center gap-2">
         <TableSearch placeholder="Search…" />
         <TableFilter name="category" label="Category" options={data.categories.map((row) => ({ value: row.id, label: actor.officeId ? row.name : `${row.officeName}: ${row.name}` }))} />
-        {filterable.map((field) => (
-          <TableFilter
-            key={field.key}
-            name={`f_${field.key}`}
-            label={field.label}
-            options={
-              field.type === "boolean"
-                ? [
-                    { value: "true", label: "Yes" },
-                    { value: "false", label: "No" },
-                  ]
-                : (field.config.options ?? []).map((option) => ({ value: option, label: option }))
-            }
-          />
-        ))}
+        {filterable.map(({ field, options }) => (
+            <TableFilter key={field.key} name={`f_${field.key}`} label={field.label} options={options} />
+          ))}
         {canRestore && <TableFilter name="view" label="Show" options={[{ value: "deleted", label: "Deleted records" }]} />}
       </div>
       {!data.fieldsCategoryId && data.categories.length > 1 && <p className="text-muted-foreground text-xs">Choose a category to see its own columns.</p>}

@@ -169,6 +169,20 @@
       "when": 1793645245708,
       "tag": "0023_system_setting_security",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1793712081220,
+      "tag": "0024_folders_and_created_by",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1793712086207,
+      "tag": "0025_purge_office_data",
+      "breakpoints": true
     }
   ]
 }

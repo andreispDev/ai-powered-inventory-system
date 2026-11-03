@@ -1,6 +1,6 @@
 "use client";
 
-import { AlignLeft, Boxes, Columns3, FileText, Lock, type LucideIcon, Plus, Tag, X } from "lucide-react";
+import { AlignLeft, Boxes, Columns3, FileText, Folder, Lock, type LucideIcon, Plus, Table2, Tag, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
@@ -19,25 +19,36 @@ const KINDS: { value: "stock" | "records"; label: string; icon: LucideIcon; help
   { value: "records", label: "Custom records", icon: FileText, help: "Anything else, such as work papers. Just your own columns, kept out of inventory." },
 ];
 
+const SHAPES: { value: boolean; label: string; icon: LucideIcon; help: string }[] = [
+  { value: true, label: "Folder", icon: Folder, help: "Holds more subcategories, such as Monitors holding Asus and Dell." },
+  { value: false, label: "Table", icon: Table2, help: "Holds the rows themselves, with the columns you choose below." },
+];
+
 type Column = { rowId: number; label: string; type: FieldType; required: boolean; options: string };
 
 export function CategoryForm({
   parent,
   defaultKind = "stock",
+  canNest = false,
 }: {
   /** A subcategory takes its type from its parent */
   parent?: { id: string; name: string; kind: "stock" | "records" };
   defaultKind?: "stock" | "records";
+  /** False at the deepest level, where it can only be a table */
+  canNest?: boolean;
 }) {
   const router = useRouter();
   const { submit, state } = useSubmit(createCategory);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [kind, setKind] = useState(parent?.kind ?? defaultKind);
+  const [isFolder, setIsFolder] = useState(!parent);
+  // Only tables hold rows, so only they get columns.
+  const isTable = !!parent && !isFolder;
   const [columns, setColumns] = useState<Column[]>([{ rowId: 0, label: "", type: "text", required: false, options: "" }]);
   const [nextRow, setNextRow] = useState(1);
   const [hidden, setHidden] = useState<OptionalItemField[]>(["location"]);
-  const given = kind === "stock" ? ["Name", "Quantity", "Status", "Date added"] : ["Name", "Date added"];
+  const given = kind === "stock" ? ["Name", "Quantity", "Status", "Added by", "Date added"] : ["Name", "Added by", "Date added"];
   const change = (rowId: number, changes: Partial<Column>) => setColumns(columns.map((column) => (column.rowId === rowId ? { ...column, ...changes } : column)));
 
   async function onSubmit(event: FormEvent) {
@@ -47,10 +58,10 @@ export function CategoryForm({
       description,
       kind,
       parentId: parent?.id,
-      // Only subcategories hold rows, so only they get columns.
-      disabledFields: parent ? hidden : [],
+      isFolder: !isTable,
+      disabledFields: isTable ? hidden : [],
       // Rows left blank are just unused.
-      columns: (parent ? columns : [])
+      columns: (isTable ? columns : [])
         .filter((column) => column.label.trim())
         .map((column) => ({
           label: column.label,
@@ -103,8 +114,30 @@ export function CategoryForm({
       <FormField id="description" icon={AlignLeft} label="Description" errors={state.fieldErrors.description}>
         <Textarea id="description" value={description} onChange={(event) => setDescription(event.target.value)} />
       </FormField>
-      {/* A top-level category is a folder of subcategories. The tables, and their columns, live in those. */}
-      {parent && (
+      {parent && canNest && (
+        <fieldset className="space-y-2">
+          <legend className="text-sm font-medium">Is it a folder or a table?</legend>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {SHAPES.map((option) => (
+              <label
+                key={option.label}
+                className={`flex cursor-pointer gap-3 rounded-lg border p-3 text-sm transition-colors duration-[var(--motion-fast)] has-focus-visible:ring-2 has-focus-visible:ring-ring ${isFolder === option.value ? "border-primary bg-primary/10" : "hover:bg-muted"}`}
+              >
+                <input type="radio" name="shape" className="sr-only" checked={isFolder === option.value} onChange={() => setIsFolder(option.value)} />
+                <span className="bg-primary/10 text-primary flex size-8 shrink-0 items-center justify-center rounded-lg">
+                  <option.icon className="size-4" aria-hidden />
+                </span>
+                <span>
+                  <span className="block font-medium">{option.label}</span>
+                  <span className="text-muted-foreground mt-0.5 block text-xs">{option.help}</span>
+                </span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
+      )}
+      {/* Folders only hold subcategories. The tables, and their columns, live in those. */}
+      {isTable && (
       <fieldset className="space-y-3 rounded-lg border p-3">
         <legend className="flex items-center gap-1.5 px-1 text-sm font-medium">
           <Columns3 className="text-primary size-4" aria-hidden />
@@ -180,9 +213,9 @@ export function CategoryForm({
         </div>
       </fieldset>
       )}
-      {!parent && <p className="text-muted-foreground text-sm">Next, add its subcategories, such as Laptop, each with its own table and columns.</p>}
+      {!isTable && <p className="text-muted-foreground text-sm">Next, add what goes inside it. Each one can be another folder, or a table with its own columns.</p>}
       <FormError state={state} />
-      <FormActions state={state} submitLabel={parent ? "Create subcategory" : "Create category"} />
+      <FormActions state={state} submitLabel={!parent ? "Create category" : isFolder ? "Create folder" : "Create table"} />
     </form>
   );
 }

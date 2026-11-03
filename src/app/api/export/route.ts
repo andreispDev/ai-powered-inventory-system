@@ -59,6 +59,7 @@ async function itemTable(tx: ScopedTx, actor: Actor, params: SearchParams, kind:
       ...(isStock ? ["Quantity", "Unit", "Status"] : []),
       ...(showLocation ? ["Location"] : []),
       ...fields.map((field) => field.label),
+      "Added by",
       "Date added",
     ],
     rows: rows.map((row) => [
@@ -71,6 +72,7 @@ async function itemTable(tx: ScopedTx, actor: Actor, params: SearchParams, kind:
         const text = formatAttribute(row.attributes[field.key], field, people);
         return text === "—" ? "" : text;
       }),
+      row.createdByName ?? "",
       row.createdAt.toISOString().slice(0, 10),
     ]),
     total,

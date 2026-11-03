@@ -22,6 +22,8 @@ export const CATALOG = {
   "category.create": entry(["admin", "user"]),
   "category.update": entry(["admin", "user"]),
   "category.archive": entry(["admin"], "admin"),
+  // Nobody has it by default: a Developer approves each request, and one approval allows one purge.
+  "data.purge": entry([], "admin"),
   "assignment.manage": entry(["admin", "user"]),
   "transfer.create": entry(["admin"]),
   "transfer.respond": entry(["admin"], "admin"),
