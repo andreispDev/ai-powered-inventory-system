@@ -11,19 +11,19 @@ const Toaster = ({ ...props }: ToasterProps) => {
     <Sonner
       theme={mode}
       className="toaster group"
-      richColors
       icons={{
         success: (
-          <CircleCheckIcon className="size-4" />
+          // Only the icon carries the color. The toast stays plain, so the message reads the same in every theme.
+          <CircleCheckIcon className="text-success size-4" />
         ),
         info: (
-          <InfoIcon className="size-4" />
+          <InfoIcon className="text-info size-4" />
         ),
         warning: (
-          <TriangleAlertIcon className="size-4" />
+          <TriangleAlertIcon className="text-warning size-4" />
         ),
         error: (
-          <OctagonXIcon className="size-4" />
+          <OctagonXIcon className="text-destructive size-4" />
         ),
         loading: (
           <Loader2Icon className="size-4 animate-spin" />
@@ -35,19 +35,6 @@ const Toaster = ({ ...props }: ToasterProps) => {
           "--normal-text": "var(--popover-foreground)",
           "--normal-border": "var(--border)",
           "--border-radius": "var(--radius)",
-          // Green for success and red for failure, from the theme so they stay readable in dark mode.
-          "--success-bg": "var(--success-subtle)",
-          "--success-text": "var(--success)",
-          "--success-border": "var(--success)",
-          "--error-bg": "color-mix(in oklch, var(--destructive) 12%, var(--popover))",
-          "--error-text": "var(--destructive)",
-          "--error-border": "var(--destructive)",
-          "--warning-bg": "var(--warning-subtle)",
-          "--warning-text": "var(--warning)",
-          "--warning-border": "var(--warning)",
-          "--info-bg": "var(--info-subtle)",
-          "--info-text": "var(--info)",
-          "--info-border": "var(--info)",
         } as React.CSSProperties
       }
       toastOptions={{
