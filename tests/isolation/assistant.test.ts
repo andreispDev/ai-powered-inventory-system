@@ -74,9 +74,9 @@ describe("assistant tools", () => {
 
   it("gives exact counts without other offices", async () => {
     const { data } = await tool(scopeA, "aggregate_inventory", {});
-    expect(data).toEqual({ results: [{ group: "all", differentItems: 2, totalUnits: 4, summary: "2 different items, 4 units in total" }] });
+    expect(data).toEqual({ results: [{ group: "all", differentItems: 2, stockItems: 2, records: 0, totalUnits: 4, summary: "2 stock items (4 units in total)" }] });
     const grouped = await tool(scopeA, "aggregate_inventory", { group_by: "category", out_of_stock_only: "true" });
-    expect(grouped.data).toEqual({ results: [{ group: "Computers", differentItems: 1, totalUnits: 0, summary: "1 different items, 0 units in total for Computers" }] });
+    expect(grouped.data).toEqual({ results: [{ group: "Computers", differentItems: 1, stockItems: 1, records: 0, totalUnits: 0, summary: "1 stock items (0 units in total) in Computers" }] });
     const nothing = await tool(scopeA, "aggregate_inventory", { search: "Secret Laptop in Office B" });
     expect(nothing).toMatchObject({ data: { results: [] }, empty: true });
   });
@@ -130,9 +130,11 @@ describe("assistant and custom records", () => {
     expect(result.sources).toEqual([{ label: "Audit paper", href: `/records/${id("e9")}` }]);
   });
 
-  it("leaves records out of stock counts", async () => {
+  it("counts records separately, and never as out of stock", async () => {
     const { data } = await tool(scopeA, "aggregate_inventory", { out_of_stock_only: "true" });
-    expect(data).toMatchObject({ results: [{ differentItems: 1 }] });
+    expect(data).toMatchObject({ results: [{ differentItems: 1, records: 0 }] });
+    const byCategory = await tool(scopeA, "aggregate_inventory", { group_by: "category" });
+    expect(byCategory.data).toMatchObject({ results: expect.arrayContaining([expect.objectContaining({ group: "Work papers", records: 1, stockItems: 0, totalUnits: 0, summary: "1 records in Work papers" })]) });
   });
 });
 

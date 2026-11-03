@@ -1,5 +1,5 @@
 // What the assistant can look up. Read-only, and every call runs in the asking person's RLS scope.
-import { and, asc, cosineDistance, count, desc, eq, gte, ilike, inArray, isNull, lte, or, sql, sum, type SQL } from "drizzle-orm";
+import { and, asc, cosineDistance, count, desc, eq, gte, ilike, inArray, isNull, lte, or, sql, type SQL } from "drizzle-orm";
 import { z } from "zod";
 import type { Permission } from "../../server/authz/catalog";
 import { itemPath } from "../inventory/kinds";
@@ -144,7 +144,7 @@ export const TOOLS: Tool[] = [
   }),
   define({
     name: "aggregate_inventory",
-    description: "Exact counts: how many items and total quantity, optionally grouped and filtered. Use for any 'how many' question about what is in stock.",
+    description: "Exact counts of stock items and records, with total stock quantity, optionally grouped and filtered. Use for any 'how many' question.",
     permission: "item.read",
     input: z.object({
       group_by: z.preprocess(blank, z.enum(["category", "status", "location", "office"]).optional()),
@@ -154,19 +154,29 @@ export const TOOLS: Tool[] = [
     async run({ tx }, { group_by, search, out_of_stock_only }) {
       const dimension = group_by === "category" ? category.name : group_by === "status" ? sql<string>`${item.status}::text` : group_by === "location" ? item.location : group_by === "office" ? office.name : sql<string>`'all'`;
       const rows = await tx
-        .select({ group: dimension, differentItems: count(), totalUnits: sum(item.quantity).mapWith(Number) })
+        .select({
+          group: dimension,
+          differentItems: count(),
+          stockItems: sql<number>`(count(*) filter (where ${category.kind} = 'stock'))::int`,
+          records: sql<number>`(count(*) filter (where ${category.kind} = 'records'))::int`,
+          // Records aren't counted stock, so their quantity never adds to the units.
+          totalUnits: sql<number>`coalesce(sum(${item.quantity}) filter (where ${category.kind} = 'stock'), 0)::int`,
+        })
         .from(item)
         .innerJoin(category, eq(item.categoryId, category.id))
         .innerJoin(office, eq(item.officeId, office.id))
-        .where(and(isNull(item.deletedAt), eq(category.kind, "stock"), search ? (matches(search) ?? sql`false`) : undefined, out_of_stock_only ? eq(item.quantity, 0) : undefined))
+        .where(and(isNull(item.deletedAt), out_of_stock_only ? and(eq(category.kind, "stock"), eq(item.quantity, 0)) : undefined, search ? (matches(search) ?? sql`false`) : undefined))
         .groupBy(...(group_by ? [dimension] : []))
         .orderBy(desc(count()))
         .limit(20);
       // Without a grouping, the database answers with one row of zeros when nothing matches.
       const found = rows.filter((row) => row.differentItems > 0);
       // A ready-made sentence, because small models tend to call every number "items".
-      const results = found.map((row) => ({ ...row, summary: `${row.differentItems} different items, ${row.totalUnits} units in total${group_by ? ` for ${row.group ?? "none"}` : ""}` }));
-      return { data: { results }, sources: [], empty: found.length === 0 && !out_of_stock_only && !!search };
+      const results = found.map((row) => {
+        const parts = [row.stockItems ? `${row.stockItems} stock items (${row.totalUnits} units in total)` : "", row.records ? `${row.records} records` : ""].filter(Boolean);
+        return { ...row, summary: `${parts.join(" and ")}${group_by ? ` in ${row.group ?? "none"}` : ""}` };
+      });
+      return { data: { results }, sources: [], empty: found.length === 0 && !out_of_stock_only };
     },
   }),
   define({
