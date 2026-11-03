@@ -32,7 +32,7 @@ const SPOKES = NODES.filter((node) => node.bright);
 
 export function AgentArt() {
   return (
-    <svg aria-hidden viewBox={`0 0 ${WIDTH} ${HEIGHT}`} preserveAspectRatio="xMidYMid slice" className="absolute inset-0 -z-20 size-full">
+    <svg aria-hidden viewBox={`0 0 ${WIDTH} ${HEIGHT}`} preserveAspectRatio="xMidYMid slice" className="absolute inset-0 -z-20 size-full opacity-60">
       <defs>
         <radialGradient id="art-glow-cyan" cx="64%" cy="40%" r="55%">
           <stop offset="0%" stopColor="#22d3ee" stopOpacity="0.32" />
