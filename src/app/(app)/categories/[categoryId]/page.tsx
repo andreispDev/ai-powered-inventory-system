@@ -69,7 +69,10 @@ async function Content({ params, searchParams }: Props) {
   const subcategories = categories.filter((other) => other.parentId === row.id && !other.archivedAt);
   const countIn = (id: string) => withDescendants(categories, id).reduce((sum, other) => sum + (categories.find((c) => c.id === other)?.items ?? 0), 0);
   const addHref = `/${records ? "records" : "inventory"}/new?category=${row.id}`;
-  const canAdd = can("item.create") && !archived;
+  // A top-level category is a folder, unless it was set up with its own columns before.
+  const isFolder = path.length === 0 && data.fields.length === 0;
+  const canAdd = can("item.create") && !archived && !isFolder;
+  const canAddSub = can("category.create") && !archived && path.length + 1 < MAX_DEPTH;
   const filterable = data.fields.filter((field) => field.type === "select" || field.type === "multi_select" || field.type === "boolean");
   const filtered = q || Object.keys(query).some((name) => name.startsWith("f_"));
 
@@ -110,8 +113,8 @@ async function Content({ params, searchParams }: Props) {
                   </Link>
                 </Button>
               )}
-              {can("category.create") && !archived && path.length + 1 < MAX_DEPTH && (
-                <Button variant="outline" asChild>
+              {canAddSub && (
+                <Button variant={isFolder ? "default" : "outline"} asChild>
                   <Link href={`/categories/new?parent=${row.id}`}>
                     <FolderPlus aria-hidden />
                     Add subcategory
@@ -179,8 +182,8 @@ async function Content({ params, searchParams }: Props) {
         subcategories.length === 0 || filtered ? (
           <EmptyState
             icon={Folder}
-            title={filtered ? `No ${noun}s match` : `No ${noun}s in ${row.name} yet`}
-            description={filtered ? "Try clearing a filter." : canAdd ? `Add your first ${noun} to get started.` : `${noun[0].toUpperCase()}${noun.slice(1)}s will appear here.`}
+            title={filtered ? `No ${noun}s match` : isFolder ? `Nothing in ${row.name} yet` : `No ${noun}s in ${row.name} yet`}
+            description={filtered ? "Try clearing a filter." : isFolder ? (canAddSub ? "Add a subcategory, such as Laptop. Each one gets its own table and columns." : "Subcategories will appear here.") : canAdd ? `Add your first ${noun} to get started.` : `${noun[0].toUpperCase()}${noun.slice(1)}s will appear here.`}
           />
         ) : null
       ) : (

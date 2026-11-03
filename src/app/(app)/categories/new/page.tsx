@@ -25,7 +25,7 @@ async function Content({ searchParams }: Props) {
       <PageHeader title={parent ? `New subcategory in ${parent.name}` : "New category"} description={parent ? "Give it a name and the columns it needs." : "Choose what it holds and which columns it needs."} />
       <Card>
         <CardContent>
-          <CategoryForm parent={parent ? { id: parent.id, name: parent.name, kind: parent.kind } : undefined} defaultKind={param(params, "kind") === "records" ? "records" : "stock"} />
+          <CategoryForm parent={parent ? { id: parent.id, name: parent.name, kind: parent.kind } : undefined} defaultKind={param(params, "kind") === "stock" ? "stock" : "records"} />
         </CardContent>
       </Card>
     </PageContainer>

@@ -13,14 +13,14 @@ const entry = (defaults: readonly Role[], minRole: Role = "user"): Entry => ({ d
 
 export const CATALOG = {
   "item.read": entry(["developer", "admin", "user"]),
-  "item.create": entry(["user"]),
-  "item.update": entry(["user"]),
+  "item.create": entry(["admin", "user"]),
+  "item.update": entry(["admin", "user"]),
   "item.delete": entry(["user"]),
   "item.restore": entry(["admin"], "admin"),
   "stock.move": entry(["user"]),
   "category.read": entry(["developer", "admin", "user"]),
-  "category.create": entry(["user"]),
-  "category.update": entry(["user"]),
+  "category.create": entry(["admin", "user"]),
+  "category.update": entry(["admin", "user"]),
   "category.archive": entry(["admin"], "admin"),
   "assignment.manage": entry(["admin", "user"]),
   "transfer.create": entry(["admin"]),

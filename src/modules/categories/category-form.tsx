@@ -47,9 +47,10 @@ export function CategoryForm({
       description,
       kind,
       parentId: parent?.id,
-      disabledFields: hidden,
+      // Only subcategories hold rows, so only they get columns.
+      disabledFields: parent ? hidden : [],
       // Rows left blank are just unused.
-      columns: columns
+      columns: (parent ? columns : [])
         .filter((column) => column.label.trim())
         .map((column) => ({
           label: column.label,
@@ -102,6 +103,8 @@ export function CategoryForm({
       <FormField id="description" icon={AlignLeft} label="Description" errors={state.fieldErrors.description}>
         <Textarea id="description" value={description} onChange={(event) => setDescription(event.target.value)} />
       </FormField>
+      {/* A top-level category is a folder of subcategories. The tables, and their columns, live in those. */}
+      {parent && (
       <fieldset className="space-y-3 rounded-lg border p-3">
         <legend className="flex items-center gap-1.5 px-1 text-sm font-medium">
           <Columns3 className="text-primary size-4" aria-hidden />
@@ -176,6 +179,8 @@ export function CategoryForm({
           </div>
         </div>
       </fieldset>
+      )}
+      {!parent && <p className="text-muted-foreground text-sm">Next, add its subcategories, such as Laptop, each with its own table and columns.</p>}
       <FormError state={state} />
       <FormActions state={state} submitLabel={parent ? "Create subcategory" : "Create category"} />
     </form>
