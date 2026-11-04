@@ -25,7 +25,10 @@ const required = (name: string) => {
   return value;
 };
 
-const db = drizzle(new Pool({ connectionString: required("DATABASE_URL"), max: 5 }), { schema });
+const db = drizzle(
+  new Pool({ connectionString: required("DATABASE_URL"), max: 5 }),
+  { schema },
+);
 const redisUrl = required("REDIS_URL");
 const prefix = process.env.QUEUE_PREFIX ?? "inventory";
 const redis = new Redis(redisUrl, { maxRetriesPerRequest: null });
@@ -43,11 +46,23 @@ const asWorker = <T>(fn: (tx: ScopedTx) => Promise<T>) =>
   });
 
 async function publish(stream: string, type: string, data: unknown) {
-  await redis.xadd(stream, "MAXLEN", "~", STREAM_LENGTH, "*", "type", type, "data", JSON.stringify(data));
+  await redis.xadd(
+    stream,
+    "MAXLEN",
+    "~",
+    STREAM_LENGTH,
+    "*",
+    "type",
+    type,
+    "data",
+    JSON.stringify(data),
+  );
 }
 
 async function alertPeople(userIds: string[]) {
-  await Promise.all(userIds.map((id) => publish(`events:user:${id}`, "notification", {})));
+  await Promise.all(
+    userIds.map((id) => publish(`events:user:${id}`, "notification", {})),
+  );
 }
 
 /** Publishes committed events. Everything stays in the outbox until this succeeds. */
@@ -78,14 +93,23 @@ async function relayOnce(): Promise<number> {
         )})`,
       );
     }
-    return { handled: events.length, toAlert, activity: events.filter((event) => event.topic === "activity") };
+    return {
+      handled: events.length,
+      toAlert,
+      activity: events.filter((event) => event.topic === "activity"),
+    };
   });
 
   // After commit, so nobody hears about a change that rolled back. A lost alert only means a later refresh.
   await alertPeople([...new Set(toAlert)]);
   for (const event of activity) {
     await publish("events:platform", "activity", event.payload);
-    if (event.officeId) await publish(`events:office:${event.officeId}`, "activity", event.payload);
+    if (event.officeId)
+      await publish(
+        `events:office:${event.officeId}`,
+        "activity",
+        event.payload,
+      );
   }
   return handled;
 }
@@ -100,14 +124,20 @@ async function relayLoop() {
     } catch (error) {
       console.error("Outbox relay:", error);
     }
-    if (handled === 0) await new Promise((resolve) => setTimeout(resolve, 1000));
+    if (handled === 0)
+      await new Promise((resolve) => setTimeout(resolve, 1000));
   }
 }
 
-const recordRun = async (name: string, status: string, durationMs: number, error?: string) => {
-  await asWorker((tx) => tx.insert(jobRun).values({ queue: QUEUE, name, status, durationMs, error })).catch((e) =>
-    console.error("Couldn't record job run:", e),
-  );
+const recordRun = async (
+  name: string,
+  status: string,
+  durationMs: number,
+  error?: string,
+) => {
+  await asWorker((tx) =>
+    tx.insert(jobRun).values({ queue: QUEUE, name, status, durationMs, error }),
+  ).catch((e) => console.error("Couldn't record job run:", e));
 };
 
 const HANDLERS: Record<string, () => Promise<void>> = {
@@ -115,12 +145,15 @@ const HANDLERS: Record<string, () => Promise<void>> = {
     const sent = await asWorker(dispatchAnnouncements);
     await alertPeople([...new Set([...sent.values()].flat())]);
   },
-  [JOBS.reminders]: async () => alertPeople([...new Set(await asWorker((tx) => scanReminders(tx)))]),
+  [JOBS.reminders]: async () =>
+    alertPeople([...new Set(await asWorker((tx) => scanReminders(tx)))]),
   [JOBS.forecast]: async () => {
     const drafts = await asWorker((tx) => draftForecasts(tx));
     // Outside any transaction: the AI can take a while, and failing only keeps the plain wording.
     await explainForecasts(drafts, createOllama());
-    await alertPeople([...new Set(await asWorker((tx) => saveForecasts(tx, drafts)))]);
+    await alertPeople([
+      ...new Set(await asWorker((tx) => saveForecasts(tx, drafts))),
+    ]);
   },
   [JOBS.embeddings]: async () => {
     try {
@@ -153,7 +186,12 @@ const worker = new Worker(
       await handler();
       await recordRun(job.name, "completed", Date.now() - started);
     } catch (error) {
-      await recordRun(job.name, "failed", Date.now() - started, String(error).slice(0, 500));
+      await recordRun(
+        job.name,
+        "failed",
+        Date.now() - started,
+        String(error).slice(0, 500),
+      );
       throw error;
     }
   },
@@ -161,21 +199,53 @@ const worker = new Worker(
 );
 worker.on("error", (error) => console.error("Queue:", error.message));
 
-const defaults = { attempts: 3, backoff: { type: "exponential", delay: 5000 }, removeOnComplete: 100, removeOnFail: 500 };
+const defaults = {
+  attempts: 3,
+  backoff: { type: "exponential", delay: 5000 },
+  removeOnComplete: 100,
+  removeOnFail: 500,
+};
 
 async function main() {
   // Only one instance fires each schedule, however many workers run.
-  await queue.upsertJobScheduler("announcements", { every: 60_000 }, { name: JOBS.announcements, opts: defaults });
-  await queue.upsertJobScheduler("reminders", { every: 3_600_000 }, { name: JOBS.reminders, opts: defaults });
-  await queue.upsertJobScheduler("audit-checkpoint", { every: 600_000 }, { name: JOBS.auditCheckpoint, opts: defaults });
-  await queue.upsertJobScheduler("audit-verify", { pattern: "0 2 * * *" }, { name: JOBS.auditVerify, opts: defaults });
-  await queue.upsertJobScheduler("forecast", { pattern: "0 1 * * *" }, { name: JOBS.forecast, opts: defaults });
+  await queue.upsertJobScheduler(
+    "announcements",
+    { every: 60_000 },
+    { name: JOBS.announcements, opts: defaults },
+  );
+  await queue.upsertJobScheduler(
+    "reminders",
+    { every: 3_600_000 },
+    { name: JOBS.reminders, opts: defaults },
+  );
+  await queue.upsertJobScheduler(
+    "audit-checkpoint",
+    { every: 600_000 },
+    { name: JOBS.auditCheckpoint, opts: defaults },
+  );
+  await queue.upsertJobScheduler(
+    "audit-verify",
+    { pattern: "0 2 * * *" },
+    { name: JOBS.auditVerify, opts: defaults },
+  );
+  await queue.upsertJobScheduler(
+    "forecast",
+    { pattern: "0 1 * * *" },
+    { name: JOBS.forecast, opts: defaults },
+  );
   await queue.add(JOBS.auditCheckpoint, {}, defaults);
   await queue.add(JOBS.forecast, {}, defaults);
-  await queue.upsertJobScheduler("embeddings", { every: 300_000 }, { name: JOBS.embeddings, opts: defaults });
+  await queue.upsertJobScheduler(
+    "embeddings",
+    { every: 300_000 },
+    { name: JOBS.embeddings, opts: defaults },
+  );
   await queue.add(JOBS.embeddings, {}, defaults);
 
-  const heartbeat = () => redis.set(WORKER_HEARTBEAT_KEY, new Date().toISOString(), "EX", 60).catch(() => {});
+  const heartbeat = () =>
+    redis
+      .set(WORKER_HEARTBEAT_KEY, new Date().toISOString(), "EX", 60)
+      .catch(() => {});
   void heartbeat();
   const beat = setInterval(heartbeat, 15_000);
 
